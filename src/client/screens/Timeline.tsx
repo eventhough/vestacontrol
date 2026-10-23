@@ -99,7 +99,7 @@ export function Timeline() {
         )}
         {settings.holdUntil && (
           <div className="banner row between">
-            <span>📌 Held on the board until {formatTime12(utcToLocalTime(settings.holdUntil, tz))}</span>
+            <span>📌 Protected from repeating notes until {formatTime12(utcToLocalTime(settings.holdUntil, tz))}</span>
             <button className="btn btn-ghost btn-sm" onClick={releaseHold}>
               Release
             </button>

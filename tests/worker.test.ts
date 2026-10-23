@@ -23,6 +23,11 @@ describe("validation", () => {
     const v = validateNoteInput({ ...base, schedule: { type: "recurring", days: [5, 1, 1], times: ["18:00", "07:00"] } });
     expect(v.schedule).toEqual({ type: "recurring", days: [1, 5], times: ["07:00", "18:00"], until: null });
   });
+  it("only lets one-time notes protect themselves from repeating notes", () => {
+    expect(validateNoteInput({ ...base, holdMinutes: 60 }).holdMinutes).toBe(60);
+    expect(validateNoteInput({ ...base, holdMinutes: 60, schedule: { type: "recurring", days: [], times: ["07:00"] } }).holdMinutes).toBe(0);
+  });
+
   it("rejects bad input", () => {
     expect(() => validateNoteInput({ ...base, content: { type: "text", text: "  " } })).toThrow(ValidationError);
     expect(() => validateNoteInput({ ...base, content: { type: "design", layout: [[99]] } })).toThrow(ValidationError);

@@ -44,7 +44,7 @@ const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export const HOLD_OPTIONS = [
-  { value: 0, label: "No minimum" },
+  { value: 0, label: "Don't protect it" },
   { value: 15, label: "15 minutes" },
   { value: 30, label: "30 minutes" },
   { value: 60, label: "1 hour" },
@@ -195,15 +195,21 @@ export function ScheduleEditor({
         </div>
       )}
 
-      <Field label="Keep it on the board for at least" hint="Repeating notes will wait until this time is up.">
-        <select className="input" value={holdMinutes} onChange={(e) => onHoldMinutes(Number(e.target.value))}>
-          {HOLD_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {/* Protection only makes sense for one-off messages; repeating notes never set it. */}
+      {draft.mode !== "repeat" && (
+        <Field
+          label="Don't let repeating notes replace this for…"
+          hint="Repeating notes that come up during this time are skipped, not delayed. One-time notes and Send now still replace it."
+        >
+          <select className="input" value={holdMinutes} onChange={(e) => onHoldMinutes(Number(e.target.value))}>
+            {HOLD_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
     </div>
   );
 }
