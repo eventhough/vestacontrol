@@ -1,0 +1,25 @@
+name = "vestacontrol"
+main = "src/worker/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The React app is built by Vite into dist/client and served as static assets.
+# API routes run in the Worker first.
+[assets]
+directory = "./dist/client"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+# The scheduler: runs every minute and sends any notes that are due.
+[triggers]
+crons = ["* * * * *"]
+
+# database_id is filled in automatically by scripts/ensure-d1.mjs on first deploy.
+[[d1_databases]]
+binding = "DB"
+database_name = "vestacontrol"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
