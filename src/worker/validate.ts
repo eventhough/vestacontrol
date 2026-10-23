@@ -1,7 +1,7 @@
 import { BOARD_SIZES } from "../shared/characters";
 import { isValidTimeZone, parseDate, parseTime } from "../shared/schedule";
 import type { NoteContent, NoteInput, Schedule, SettingsUpdate, WidgetType } from "../shared/types";
-import { WIDGETS } from "../shared/types";
+import { DAILY_KINDS, WIDGETS } from "../shared/types";
 
 export class ValidationError extends Error {}
 
@@ -34,6 +34,8 @@ export function validateContent(c: unknown): NoteContent {
       check(typeof cfg === "object", "Invalid settings");
       if (cfg.messages) check(Array.isArray(cfg.messages) && cfg.messages.length <= 100 && cfg.messages.every((m) => typeof m === "string" && m.length <= 500), "Invalid messages");
       if (cfg.prompt) check(typeof cfg.prompt === "string" && cfg.prompt.length <= 1000, "Prompt is too long");
+      if (cfg.kinds !== undefined) check(Array.isArray(cfg.kinds) && cfg.kinds.every((k) => DAILY_KINDS.includes(k)), "Invalid mix types");
+      if (content.widget === "mix") check(cfg.kinds === undefined || cfg.kinds.length > 0, "Pick at least one type for the mix.");
       if (cfg.date) check(parseDate(cfg.date), "Invalid countdown date");
       if (cfg.label) check(typeof cfg.label === "string" && cfg.label.length <= 60, "Label is too long");
       return {
@@ -46,6 +48,7 @@ export function validateContent(c: unknown): NoteContent {
           yearly: !!cfg.yearly,
           messages: cfg.messages,
           prompt: cfg.prompt,
+          kinds: cfg.kinds ? DAILY_KINDS.filter((k) => cfg.kinds!.includes(k)) : undefined,
         },
       };
     }
