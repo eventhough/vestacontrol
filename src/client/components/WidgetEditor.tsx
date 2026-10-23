@@ -1,5 +1,7 @@
 import type { WidgetConfig, WidgetType } from "../../shared/types";
 import { WIDGETS } from "../../shared/types";
+import { BOARD_SIZES } from "../../shared/characters";
+import { formatText } from "../../shared/formatter";
 import { useApp } from "../state";
 import { Field, Segmented } from "./ui";
 
@@ -74,15 +76,21 @@ export function WidgetEditor({
       )}
 
       {widget === "rotation" && (
-        <Field label="Messages (one per line)" hint="Each time this note runs it shows the next message.">
-          <textarea
-            className="input"
-            rows={6}
-            placeholder={"DRINK WATER\nYOU ARE LOVED\nTAKE OUT THE TRASH"}
-            value={(config.messages ?? []).join("\n")}
-            onChange={(e) => set({ messages: e.target.value.split("\n") })}
-          />
-        </Field>
+        <>
+          <Field
+            label="Messages to rotate through (one per line)"
+            hint="Each time this note runs, the board shows the next message in the list. After the last one, it starts over from the top."
+          >
+            <textarea
+              className="input"
+              rows={6}
+              placeholder={"DRINK WATER\nYOU ARE LOVED\nTAKE OUT THE TRASH"}
+              value={(config.messages ?? []).join("\n")}
+              onChange={(e) => set({ messages: e.target.value.split("\n") })}
+            />
+          </Field>
+          <RotationOrder messages={config.messages ?? []} />
+        </>
       )}
 
       {widget === "ai" && (
@@ -102,4 +110,39 @@ export function WidgetEditor({
       )}
     </div>
   );
+}
+
+/** The order messages will appear in, with a warning for any that won't fit the board. */
+function RotationOrder({ messages }: { messages: string[] }) {
+  const { settings } = useApp();
+  const list = messages.map((m) => m.trim()).filter(Boolean);
+  if (list.length === 0) return null;
+  const size = BOARD_SIZES[settings.boardType];
+  return (
+    <div className="stack-sm">
+      <span className="field-label">Order on the board</span>
+      <ol className="rotation-order">
+        {list.map((m, i) => {
+          const fits = formatText(m, { board: settings.boardType, ...size }).fits;
+          return (
+            <li key={i}>
+              <span className="muted small">{ordinal(i + 1)} run</span> {m}
+              {!fits && <span className="warn small"> · too long, will be cut off</span>}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="muted small">
+        {list.length > 1 ? `Then back to the first message on run ${list.length + 1}. ` : "With one message, it shows the same thing every time. "}
+        Skipped runs (quiet hours, protected messages) and failed sends don't move it forward. Preview and Send now always show the first
+        message.
+      </p>
+    </div>
+  );
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }

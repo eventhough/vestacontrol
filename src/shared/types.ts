@@ -122,6 +122,6 @@ export const WIDGETS: Record<WidgetType, { label: string; icon: string; descript
   fact: { label: "Fun fact", icon: "💡", description: "Something surprising to learn." },
   countdown: { label: "Countdown", icon: "⏳", description: "Days until a birthday, trip or holiday." },
   date: { label: "Date & greeting", icon: "📅", description: "Good morning + today's date." },
-  rotation: { label: "Message rotation", icon: "🔁", description: "Cycle through your own list of messages." },
+  rotation: { label: "Message rotation", icon: "🔁", description: "Shows the next message from your list each time it runs, then starts over." },
   ai: { label: "Ask Claude", icon: "✨", description: "Fresh content from your own prompt, written to fit the board." },
 };
