@@ -12,7 +12,7 @@ To set up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes
 - **Scheduling**: send now, at a specific time, or repeating (pick days, several times a day, "every hour between…", and an optional end date)
 - **Smart notes** that are generated fresh each time they're sent:
   - 🌤️ Weather forecast (free [Open-Meteo](https://open-meteo.com), no key needed)
-  - 💬 Quote of the day, ❓ question of the day, 😄 joke, 💡 fun fact
+  - 💬 Quote of the day, ❓ question of the day, 😄 joke, 💡 fun fact, 📖 word of the day
   - ⏳ Countdown ("12 DAYS UNTIL DISNEY TRIP"), with yearly repeat for birthdays and holidays
   - 📅 Good morning + date
   - 🔁 Message rotation (cycles through your own list)
@@ -78,7 +78,7 @@ Paste it into the setup wizard (or *Settings → Connection* later) and tap **Te
 
 ### Claude features (optional)
 
-With an Anthropic API key, Claude can write fresh quotes, questions, jokes and fun facts, and the **✨ Ask Claude** smart note can take any prompt you give it. Claude's output is sized to fit your board.
+With an Anthropic API key, Claude can write fresh quotes, questions, jokes, fun facts and words of the day, and the **✨ Ask Claude** smart note can take any prompt you give it. Claude's output is sized to fit your board.
 
 1. At [console.anthropic.com](https://console.anthropic.com), add a payment method and some credit under **Billing**. This is a separate account from a Claude chat subscription.
 2. Under **API Keys**, create a key and copy it (it starts with `sk-ant-`).

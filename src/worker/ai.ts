@@ -46,4 +46,5 @@ export const AI_PROMPTS = {
   question: "Write a fun question of the day to spark family conversation at dinner.",
   joke: "Write a short, clean, groan-worthy joke (setup and punchline).",
   fact: "Write a surprising, true fun fact.",
+  word: "Pick an interesting, family-friendly English word of the day. Put the word alone on the first line, then a short, plain-language definition on the following line(s).",
 } as const;

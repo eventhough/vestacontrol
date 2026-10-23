@@ -112,7 +112,7 @@ export function SettingsScreen({ onSignOut }: { onSignOut: () => void }) {
       <section className="card stack">
         <h2>✨ Claude</h2>
         {settings.aiAvailable ? (
-          <p className="ok">Connected. Smart notes can use Claude to write fresh quotes, questions, jokes and anything you ask for.</p>
+          <p className="ok">Connected. Smart notes can use Claude to write fresh quotes, questions, jokes, words of the day and anything you ask for.</p>
         ) : (
           <p className="muted small">
             Optional. Add an Anthropic API key as the <code>ANTHROPIC_API_KEY</code> secret on your deployment to let Claude write fresh content. See the README.
