@@ -56,7 +56,7 @@ Once this is set up, every push to `main` deploys automatically through GitHub A
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
    - `ANTHROPIC_API_KEY` *(optional; see [Claude features](#claude-features-optional))*
-6. **Push to `main`** (or merge a PR). The workflow creates the database, applies migrations and deploys. The URL appears near the end of the *Deploy to Cloudflare* step in the **Actions** tab.
+6. **Push to `main`** (or merge a PR). The workflow creates the database, applies migrations and deploys. To find your app's address, open the Cloudflare dashboard and go to **Workers & Pages → vestacontrol**. The deploy log hides it, since this repo may be public.
 7. **Open it on your phone right away.** The setup wizard walks you through creating the household password, choosing your board, connecting the Vestaboard API, and setting your time zone and location.
 
 > **Whoever opens the site first sets the household password**, so do it as soon as the first deploy finishes.
@@ -97,14 +97,18 @@ No secrets are stored in this repository.
 | Anthropic API key | GitHub secret, copied during deploy into Cloudflare's encrypted Worker secrets | Only the running app. It can't be viewed in the Cloudflare dashboard after it's saved. |
 | Vestaboard API key | Entered in the app; stored in the D1 database on Cloudflare | Never sent back to the browser (the app only shows its last 4 characters). It's stored unencrypted in the database, so anyone with access to your Cloudflare account could read it. |
 | Household password | Only a salted PBKDF2-SHA256 hash is stored | Nobody; it can be checked but not read back. |
+| Your app's address | Not in the code or the deploy logs | Anyone who has it can reach the sign-in page, so treat the password, not the address, as the protection. |
 
 How the household password works:
 
-- **One shared password and no accounts.** It's set once in the setup wizard, after which setup is locked.
+- **One shared password and no accounts.** It's set once in the setup wizard, after which setup is locked. It must be at least 12 characters; a few random words works well.
 - **Each phone stays signed in for 180 days.**
 - **Changing the password** (*Settings → Household password*) signs out every other phone.
-- **After 10 wrong attempts in 15 minutes,** sign-in pauses for 15 minutes. The pause applies to everyone, not per device.
+- **Wrong guesses lock out only the device making them.** Each device (more precisely, each IP address or home network) gets 4 free mistakes. After that it's locked out for 5 minutes, then 10, 20 and so on, doubling up to 24 hours. Other family members' phones keep working.
+- **Browser protections:** the app sends security headers that stop other websites from embedding it or running their own code inside it.
 - **Local secrets** for development go in `.dev.vars`, which is git-ignored.
+
+Also turn on two-factor sign-in for the accounts behind the app: GitHub, Cloudflare, Anthropic and Vestaboard.
 
 ## Develop locally
 

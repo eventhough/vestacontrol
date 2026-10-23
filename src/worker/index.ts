@@ -1,16 +1,24 @@
 import { Context, Hono } from "hono";
+import { secureHeaders } from "hono/secure-headers";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { nextRun, runsBetween } from "../shared/schedule";
-import type { Note, TimelineItem } from "../shared/types";
+import { MIN_PASSWORD_LENGTH, type Note, type TimelineItem } from "../shared/types";
 import { SESSION_COOKIE, SESSION_DAYS, createSessionToken, hashPassword, randomHex, verifyPassword, verifySessionToken } from "./auth";
 import { NoteRow, addHistory, getNoteRow, getSettings, listFavorites, listHistory, publicSettings, rowToNote, saveSettings } from "./db";
 import type { Env } from "./env";
 import { RenderError, renderContent } from "./render";
+import { clearFailures, clientKey, describeWait, lockedFor, recordFailure } from "./throttle";
 import { deliver, runScheduler } from "./scheduler";
 import { ValidationError, validateContent, validateNoteInput, validateSettings } from "./validate";
 import { VestaboardError, readLayout, sendLayout } from "./vestaboard";
 
 const app = new Hono<{ Bindings: Env }>().basePath("/api");
+
+app.use("*", secureHeaders(), async (c, next) => {
+  await next();
+  // API responses contain household data; never let a browser or proxy cache them.
+  c.header("Cache-Control", "no-store");
+});
 
 app.onError((err, c) => {
   if (err instanceof ValidationError || err instanceof RenderError) return c.json({ error: err.message }, 400);
@@ -37,6 +45,13 @@ function setSession(c: Context, token: string) {
   });
 }
 
+const PASSWORD_TOO_SHORT = `Choose a password with at least ${MIN_PASSWORD_LENGTH} characters. A few random words works well.`;
+
+function tooManyAttempts(c: Context, waitMs: number) {
+  c.header("Retry-After", String(Math.ceil(waitMs / 1000)));
+  return c.json({ error: `Too many wrong passwords from this device. Try again in ${describeWait(waitMs)}.` }, 429);
+}
+
 // ---------- public: setup & login ----------
 
 app.get("/status", async (c) => {
@@ -49,7 +64,7 @@ app.post("/setup", async (c) => {
   const s = await getSettings(c.env);
   if (s.passwordHash) return c.json({ error: "Vestacontrol is already set up." }, 409);
   const body = await json<{ password?: string } & Record<string, unknown>>(c.req.raw);
-  if (typeof body.password !== "string" || body.password.length < 6) throw new ValidationError("Choose a password with at least 6 characters.");
+  if (typeof body.password !== "string" || body.password.length < MIN_PASSWORD_LENGTH) throw new ValidationError(PASSWORD_TOO_SHORT);
   const update = validateSettings(body);
   const sessionSecret = randomHex(32);
   await saveSettings(c.env, { ...update, passwordHash: await hashPassword(body.password), sessionSecret });
@@ -60,16 +75,16 @@ app.post("/setup", async (c) => {
 app.post("/login", async (c) => {
   const s = await getSettings(c.env);
   if (!s.passwordHash || !s.sessionSecret) return c.json({ error: "Not set up yet." }, 409);
-  const now = Date.now();
-  const failures = s.loginFailures && now - s.loginFailures.since < 15 * 60_000 ? s.loginFailures : { count: 0, since: now };
-  if (failures.count >= 10) return c.json({ error: "Too many attempts. Try again in 15 minutes." }, 429);
+  const client = clientKey(c.req.raw);
+  const wait = await lockedFor(c.env, client);
+  if (wait) return tooManyAttempts(c, wait);
 
   const { password } = await json<{ password?: string }>(c.req.raw);
   if (typeof password !== "string" || !(await verifyPassword(password, s.passwordHash))) {
-    await saveSettings(c.env, { loginFailures: { count: failures.count + 1, since: failures.since } });
-    return c.json({ error: "Wrong password." }, 401);
+    const lock = await recordFailure(c.env, client);
+    return lock ? tooManyAttempts(c, lock) : c.json({ error: "Wrong password." }, 401);
   }
-  if (s.loginFailures) await saveSettings(c.env, { loginFailures: null });
+  await clearFailures(c.env, client);
   setSession(c, await createSessionToken(s.sessionSecret));
   return c.json({ ok: true });
 });
@@ -101,9 +116,16 @@ app.put("/settings", async (c) => {
 
 app.post("/settings/password", async (c) => {
   const s = await getSettings(c.env);
+  const client = clientKey(c.req.raw);
+  const wait = await lockedFor(c.env, client);
+  if (wait) return tooManyAttempts(c, wait);
   const { current, next } = await json<{ current?: string; next?: string }>(c.req.raw);
-  if (typeof current !== "string" || !(await verifyPassword(current, s.passwordHash!))) return c.json({ error: "Current password is wrong." }, 401);
-  if (typeof next !== "string" || next.length < 6) throw new ValidationError("Choose a password with at least 6 characters.");
+  if (typeof current !== "string" || !(await verifyPassword(current, s.passwordHash!))) {
+    const lock = await recordFailure(c.env, client);
+    return lock ? tooManyAttempts(c, lock) : c.json({ error: "Current password is wrong." }, 401);
+  }
+  if (typeof next !== "string" || next.length < MIN_PASSWORD_LENGTH) throw new ValidationError(PASSWORD_TOO_SHORT);
+  await clearFailures(c.env, client);
   const sessionSecret = randomHex(32);
   await saveSettings(c.env, { passwordHash: await hashPassword(next), sessionSecret });
   setSession(c, await createSessionToken(sessionSecret));

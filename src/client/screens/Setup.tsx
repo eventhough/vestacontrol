@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import type { BoardType } from "../../shared/characters";
-import type { ApiType, Location } from "../../shared/types";
+import { MIN_PASSWORD_LENGTH, type ApiType, type Location } from "../../shared/types";
 import { api } from "../api";
 import { Logo } from "../App";
 import { BoardTypePicker, ConnectionFields, LocationSearch, TimezoneSelect, deviceTimeZone } from "../components/SettingsFields";
@@ -58,7 +58,7 @@ export function Setup({ onDone }: { onDone: () => void }) {
           <Field label="Which Vestaboard do you have?">
             <BoardTypePicker value={boardType} onChange={setBoardType} />
           </Field>
-          <Field label="Household password" hint="Share this with your family. Everyone uses the same one.">
+          <Field label="Household password" hint={`Share this with your family. Use at least ${MIN_PASSWORD_LENGTH} characters; a few random words (like "maple ladder sunny piano") is easy to remember and hard to guess.`}>
             <input className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Field label="Confirm password">
@@ -68,10 +68,10 @@ export function Setup({ onDone }: { onDone: () => void }) {
             <TimezoneSelect value={timezone} onChange={setTimezone} />
           </Field>
           {error && <p className="error">{error}</p>}
-          <button className="btn btn-primary btn-block" disabled={busy || password.length < 6}>
+          <button className="btn btn-primary btn-block" disabled={busy || password.length < MIN_PASSWORD_LENGTH}>
             {busy ? "Creating…" : "Continue"}
           </button>
-          {password.length > 0 && password.length < 6 && <p className="muted small">At least 6 characters.</p>}
+          {password.length > 0 && password.length < MIN_PASSWORD_LENGTH && <p className="muted small">At least {MIN_PASSWORD_LENGTH} characters.</p>}
         </form>
       )}
 

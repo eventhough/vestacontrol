@@ -1,6 +1,9 @@
 import type { BoardType, Layout } from "./characters";
 import type { Align, VAlign } from "./formatter";
 
+/** Long passwords are what make guessing impractical, since the code (and the sign-in page) is public. */
+export const MIN_PASSWORD_LENGTH = 12;
+
 export type WidgetType = "weather" | "quote" | "question" | "joke" | "fact" | "countdown" | "date" | "rotation" | "ai";
 
 export interface WidgetConfig {

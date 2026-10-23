@@ -50,7 +50,11 @@ jobs:
           fi
       - name: Deploy to Cloudflare
         if: steps.creds.outputs.ok == 'true'
-        run: npm run deploy
+        # This repo is public, so keep the app's address out of the logs.
+        # Find it in the Cloudflare dashboard under Workers & Pages → vestacontrol.
+        run: |
+          set -o pipefail
+          npm run deploy 2>&1 | sed -E 's#https://[A-Za-z0-9.-]+\.workers\.dev#https://(hidden).workers.dev#g; s#[A-Za-z0-9-]+\.[A-Za-z0-9-]+\.workers\.dev#(hidden).workers.dev#g'
       - name: Sync Claude API key
         if: steps.creds.outputs.ok == 'true' && env.ANTHROPIC_API_KEY != ''
         run: echo "$ANTHROPIC_API_KEY" | npx wrangler secret put ANTHROPIC_API_KEY
