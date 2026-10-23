@@ -3,7 +3,7 @@
 import { BOARD_SIZES, BoardType, Layout, normalizeLayout } from "../shared/characters";
 import { formatText } from "../shared/formatter";
 import { parseDate, utcToLocalDate, zonedParts } from "../shared/schedule";
-import type { NoteContent, WidgetConfig, WidgetType } from "../shared/types";
+import { DAILY_KINDS, type DailyKind, type NoteContent, type WidgetConfig, type WidgetType } from "../shared/types";
 import { AI_PROMPTS, generateBoardText } from "./ai";
 import { FACTS, JOKES, QUESTIONS, QUOTES, WORDS } from "./content";
 import type { Settings } from "./db";
@@ -12,6 +12,10 @@ import type { Env } from "./env";
 export interface WidgetState {
   index?: number;
   recent?: string[];
+  /** mix: which of the chosen types goes next */
+  mix?: number;
+  /** mix: each type's own place in its list, so mixing doesn't cause repeats */
+  parts?: Partial<Record<DailyKind, WidgetState>>;
 }
 
 export interface Rendered {
@@ -62,6 +66,8 @@ async function renderWidget(widget: WidgetType, config: WidgetConfig, ctx: Ctx):
     case "fact":
     case "word":
       return ofTheDay(widget, config, ctx);
+    case "mix":
+      return smartMix(config, ctx);
     case "countdown":
       return countdown(config, ctx);
     case "date":
@@ -75,10 +81,10 @@ async function renderWidget(widget: WidgetType, config: WidgetConfig, ctx: Ctx):
 
 // ---------- of the day ----------
 
-const LISTS = { quote: QUOTES, question: QUESTIONS, joke: JOKES, fact: FACTS, word: WORDS };
-const HEADERS = { quote: "", question: "QUESTION OF THE DAY", joke: "", fact: "FUN FACT", word: "WORD OF THE DAY" };
+const LISTS: Record<DailyKind, string[]> = { quote: QUOTES, question: QUESTIONS, joke: JOKES, fact: FACTS, word: WORDS };
+const HEADERS: Record<DailyKind, string> = { quote: "", question: "QUESTION OF THE DAY", joke: "", fact: "FUN FACT", word: "WORD OF THE DAY" };
 
-async function ofTheDay(kind: keyof typeof LISTS, config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
+async function ofTheDay(kind: DailyKind, config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   const recent = ctx.state.recent ?? [];
   let text: string | null = null;
   let index = ctx.state.index ?? 0;
@@ -102,6 +108,19 @@ async function ofTheDay(kind: keyof typeof LISTS, config: WidgetConfig, ctx: Ctx
   const withHeader = header ? `${header}\n\n${text}` : text;
   const shown = header && fit(ctx, withHeader, 1).fits ? withHeader : text;
   return { layout: fit(ctx, shown).layout, text, state: { index, recent: [text, ...recent].slice(0, 10) } };
+}
+
+// ---------- smart mix ----------
+
+/** Shows the next of the chosen daily types each run, like a message rotation. */
+async function smartMix(config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
+  const kinds = DAILY_KINDS.filter((k) => (config.kinds ?? DAILY_KINDS).includes(k));
+  if (kinds.length === 0) throw new RenderError("Pick at least one type for the mix.");
+  const i = (ctx.state.mix ?? 0) % kinds.length;
+  const kind = kinds[i];
+  const parts = ctx.state.parts ?? {};
+  const r = await ofTheDay(kind, config, { ...ctx, state: parts[kind] ?? {} });
+  return { ...r, state: { mix: (i + 1) % kinds.length, parts: { ...parts, [kind]: r.state } } };
 }
 
 // ---------- weather ----------

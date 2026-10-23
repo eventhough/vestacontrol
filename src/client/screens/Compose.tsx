@@ -127,6 +127,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     if (kind === "widget" && widget === "countdown" && !config.date) return "Pick a date for the countdown.";
     if (kind === "widget" && widget === "ai" && !config.prompt?.trim()) return "Tell Claude what to write.";
     if (kind === "widget" && widget === "rotation" && !(config.messages ?? []).some((m) => m.trim())) return "Add at least one message.";
+    if (kind === "widget" && widget === "mix" && config.kinds?.length === 0) return "Pick at least one type for the mix.";
     if (draft.mode === "repeat" && draft.times.length === 0) return "Add at least one time.";
     return null;
   };

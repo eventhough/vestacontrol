@@ -13,6 +13,7 @@ To set up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes
 - **Smart notes** that are generated fresh each time they're sent:
   - 🌤️ Weather forecast (free [Open-Meteo](https://open-meteo.com), no key needed)
   - 💬 Quote of the day, ❓ question of the day, 😄 joke, 💡 fun fact, 📖 word of the day
+  - 🔀 Smart mix: takes turns between any of those five that you pick, such as a joke one day and a word the next
   - ⏳ Countdown ("12 DAYS UNTIL DISNEY TRIP"), with yearly repeat for birthdays and holidays
   - 📅 Good morning + date
   - 🔁 Message rotation (cycles through your own list)

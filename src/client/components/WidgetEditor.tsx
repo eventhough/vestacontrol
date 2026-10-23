@@ -1,5 +1,4 @@
-import type { WidgetConfig, WidgetType } from "../../shared/types";
-import { WIDGETS } from "../../shared/types";
+import { DAILY_KINDS, WIDGETS, type DailyKind, type WidgetConfig, type WidgetType } from "../../shared/types";
 import { BOARD_SIZES } from "../../shared/characters";
 import { formatText } from "../../shared/formatter";
 import { useApp } from "../state";
@@ -38,7 +37,9 @@ export function WidgetEditor({
       </div>
       <p className="muted">{WIDGETS[widget].description}</p>
 
-      {(widget === "quote" || widget === "question" || widget === "joke" || widget === "fact" || widget === "word") && (
+      {widget === "mix" && <MixPicker kinds={config.kinds ?? DAILY_KINDS} onChange={(kinds) => set({ kinds })} />}
+
+      {(widget === "mix" || (DAILY_KINDS as WidgetType[]).includes(widget)) && (
         <Field
           label="Where should it come from?"
           hint={settings.aiAvailable ? "Claude writes a fresh one every time, sized to fit your board." : "Add an Anthropic API key to let Claude write fresh ones (see README)."}
@@ -145,4 +146,42 @@ function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
+/** Pick which daily types the Smart mix takes turns between, and show the order they'll run in. */
+function MixPicker({ kinds, onChange }: { kinds: DailyKind[]; onChange: (kinds: DailyKind[]) => void }) {
+  const chosen = DAILY_KINDS.filter((k) => kinds.includes(k));
+  const toggle = (k: DailyKind) => onChange(chosen.includes(k) ? chosen.filter((x) => x !== k) : DAILY_KINDS.filter((x) => x === k || chosen.includes(x)));
+  return (
+    <>
+      <Field label="Take turns between" hint="Tap to add or remove. Pick as few as one.">
+        <div className="chips">
+          {DAILY_KINDS.map((k) => (
+            <button key={k} type="button" className={`chip${chosen.includes(k) ? " chip-selected" : ""}`} aria-pressed={chosen.includes(k)} onClick={() => toggle(k)}>
+              {WIDGETS[k].icon} {WIDGETS[k].label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      {chosen.length === 0 ? (
+        <p className="warn small">Pick at least one type.</p>
+      ) : (
+        <div className="stack-sm">
+          <span className="field-label">Order on the board</span>
+          <ol className="rotation-order">
+            {chosen.map((k, i) => (
+              <li key={k}>
+                <span className="muted small">{ordinal(i + 1)} run</span> {WIDGETS[k].icon} {WIDGETS[k].label}
+              </li>
+            ))}
+          </ol>
+          <p className="muted small">
+            {chosen.length > 1 ? `Then back to the first type on run ${chosen.length + 1}. ` : ""}
+            Each type keeps its own place in its list, so nothing repeats until that list starts over. Skipped runs and failed sends don't move it
+            forward, and Preview and Send now always show the first type.
+          </p>
+        </div>
+      )}
+    </>
+  );
 }

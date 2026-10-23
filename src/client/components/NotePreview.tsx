@@ -1,7 +1,6 @@
 import { BOARD_SIZES, BoardType, Layout, normalizeLayout } from "../../shared/characters";
 import { formatText } from "../../shared/formatter";
-import type { NoteContent } from "../../shared/types";
-import { WIDGETS } from "../../shared/types";
+import { DAILY_KINDS, WIDGETS, type NoteContent } from "../../shared/types";
 import { Board } from "./Board";
 
 /** Layout for content that can be rendered on the device (text and designs). Widgets render on the server. */
@@ -18,6 +17,10 @@ export function contentSummary(content: NoteContent): string {
   const w = WIDGETS[content.widget];
   if (content.widget === "countdown" && content.config.label) return `Countdown: ${content.config.label}`;
   if (content.widget === "ai" && content.config.prompt) return `Claude: ${content.config.prompt}`;
+  if (content.widget === "mix") {
+    const kinds = DAILY_KINDS.filter((k) => (content.config.kinds ?? DAILY_KINDS).includes(k));
+    return `Smart mix: ${kinds.map((k) => WIDGETS[k].label.replace(/ of the day$/, "")).join(", ")}`;
+  }
   return w.label;
 }
 

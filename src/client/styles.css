@@ -520,6 +520,10 @@ textarea.input {
   align-items: center;
   gap: 6px;
 }
+.chip-selected {
+  border-color: var(--accent);
+  background: rgba(246, 192, 44, 0.14);
+}
 .chip-on {
   background: var(--surface-2);
 }

@@ -4,10 +4,14 @@ import type { Align, VAlign } from "./formatter";
 /** Long passwords are what make guessing impractical, since the code (and the sign-in page) is public. */
 export const MIN_PASSWORD_LENGTH = 12;
 
-export type WidgetType = "weather" | "quote" | "question" | "joke" | "fact" | "word" | "countdown" | "date" | "rotation" | "ai";
+export type WidgetType = "weather" | "quote" | "question" | "joke" | "fact" | "word" | "mix" | "countdown" | "date" | "rotation" | "ai";
+
+/** The "of the day" types, which the Smart mix takes turns between (in this order). */
+export type DailyKind = "quote" | "question" | "joke" | "fact" | "word";
+export const DAILY_KINDS: DailyKind[] = ["quote", "question", "joke", "fact", "word"];
 
 export interface WidgetConfig {
-  /** quote/question/joke/fact/word: use the built-in list or have Claude write a fresh one. */
+  /** quote/question/joke/fact/word/mix: use the built-in list or have Claude write a fresh one. */
   source?: "curated" | "ai";
   /** countdown */
   label?: string;
@@ -15,6 +19,8 @@ export interface WidgetConfig {
   yearly?: boolean;
   /** rotation */
   messages?: string[];
+  /** mix: which daily types to take turns between. Missing means all of them. */
+  kinds?: DailyKind[];
   /** ai */
   prompt?: string;
 }
@@ -121,6 +127,7 @@ export const WIDGETS: Record<WidgetType, { label: string; icon: string; descript
   joke: { label: "Joke of the day", icon: "😄", description: "A groan-worthy one-liner." },
   fact: { label: "Fun fact", icon: "💡", description: "Something surprising to learn." },
   word: { label: "Word of the day", icon: "📖", description: "An interesting word and what it means." },
+  mix: { label: "Smart mix", icon: "🔀", description: "Takes turns between the daily types you pick: a quote one time, a joke the next, and so on." },
   countdown: { label: "Countdown", icon: "⏳", description: "Days until a birthday, trip or holiday." },
   date: { label: "Date & greeting", icon: "📅", description: "Good morning + today's date." },
   rotation: { label: "Message rotation", icon: "🔁", description: "Shows the next message from your list each time it runs, then starts over." },

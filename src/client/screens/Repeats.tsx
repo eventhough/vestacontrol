@@ -35,6 +35,10 @@ const IDEAS: { label: string; input: NoteInput; needs?: "location" | "ai" }[] = 
     input: { title: "Fun fact", content: { type: "widget", widget: "fact", config: {} }, schedule: { type: "recurring", days: [1, 2, 3, 4, 5], times: ["15:30"] } },
   },
   {
+    label: "Smart mix at 5:30 (all five types)",
+    input: { title: "Smart mix", content: { type: "widget", widget: "mix", config: {} }, schedule: { type: "recurring", days: [], times: ["17:30"] } },
+  },
+  {
     label: "Word of the day at 7",
     input: { title: "Word of the day", content: { type: "widget", widget: "word", config: {} }, schedule: { type: "recurring", days: [], times: ["07:00"] } },
   },
