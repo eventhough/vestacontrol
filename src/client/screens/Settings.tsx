@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SettingsUpdate } from "../../shared/types";
+import { MIN_PASSWORD_LENGTH, type SettingsUpdate } from "../../shared/types";
 import { api } from "../api";
 import { BoardTypePicker, ConnectionFields, LocationSearch, TimezoneSelect } from "../components/SettingsFields";
 import { Field, Segmented, Switch } from "../components/ui";
@@ -124,10 +124,10 @@ export function SettingsScreen({ onSignOut }: { onSignOut: () => void }) {
         <h2>Household password</h2>
         <p className="muted small">Changing it signs everyone else out.</p>
         <input className="input" type="password" placeholder="Current password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
-        <input className="input" type="password" placeholder="New password (6+ characters)" autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
+        <input className="input" type="password" placeholder={`New password (${MIN_PASSWORD_LENGTH}+ characters)`} autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
         <button
           className="btn"
-          disabled={!pw.current || pw.next.length < 6}
+          disabled={!pw.current || pw.next.length < MIN_PASSWORD_LENGTH}
           onClick={async () => {
             try {
               await api.changePassword(pw.current, pw.next);

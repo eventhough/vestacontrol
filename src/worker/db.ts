@@ -17,7 +17,6 @@ export interface Settings {
   quietStart: string | null;
   quietEnd: string | null;
   holdUntil: number | null;
-  loginFailures: { count: number; since: number } | null;
 }
 
 const DEFAULTS: Settings = {
@@ -33,7 +32,6 @@ const DEFAULTS: Settings = {
   quietStart: null,
   quietEnd: null,
   holdUntil: null,
-  loginFailures: null,
 };
 
 export async function getSettings(env: Env): Promise<Settings> {
