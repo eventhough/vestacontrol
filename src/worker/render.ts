@@ -1,6 +1,6 @@
 // Turns a note's content (text, a hand-made design, or a smart widget) into a board layout.
 
-import { BOARD_SIZES, Layout, normalizeLayout } from "../shared/characters";
+import { BOARD_SIZES, BoardType, Layout, normalizeLayout } from "../shared/characters";
 import { formatText } from "../shared/formatter";
 import { parseDate, utcToLocalDate, zonedParts } from "../shared/schedule";
 import type { NoteContent, WidgetConfig, WidgetType } from "../shared/types";
@@ -22,6 +22,7 @@ export interface Rendered {
 }
 
 interface Ctx {
+  board: BoardType;
   env: Env;
   settings: Settings;
   rows: number;
@@ -33,17 +34,18 @@ interface Ctx {
 export class RenderError extends Error {}
 
 export async function renderContent(env: Env, settings: Settings, content: NoteContent, state: WidgetState = {}, now = Date.now()): Promise<Rendered> {
-  const { rows, cols } = BOARD_SIZES[settings.boardType];
+  const board = settings.boardType;
+  const { rows, cols } = BOARD_SIZES[board];
   if (content.type === "design") return { layout: normalizeLayout(content.layout, rows, cols) };
   if (content.type === "text") {
-    const r = formatText(content.text, { rows, cols, align: content.align, valign: content.valign, abbreviate: content.abbreviate ?? 2 });
+    const r = formatText(content.text, { board, rows, cols, align: content.align, valign: content.valign, abbreviate: content.abbreviate ?? 2 });
     return { layout: r.layout, text: content.text };
   }
-  return renderWidget(content.widget, content.config ?? {}, { env, settings, rows, cols, now, state });
+  return renderWidget(content.widget, content.config ?? {}, { env, settings, board, rows, cols, now, state });
 }
 
 function fit(ctx: Ctx, text: string, abbreviate = 2) {
-  return formatText(text, { rows: ctx.rows, cols: ctx.cols, abbreviate });
+  return formatText(text, { board: ctx.board, rows: ctx.rows, cols: ctx.cols, abbreviate });
 }
 
 function fitsBoard(ctx: Ctx, text: string): boolean {
@@ -82,7 +84,7 @@ async function ofTheDay(kind: keyof typeof LISTS, config: WidgetConfig, ctx: Ctx
 
   if (config.source === "ai" && ctx.env.ANTHROPIC_API_KEY) {
     try {
-      const generated = await generateBoardText(ctx.env, AI_PROMPTS[kind], ctx.rows, ctx.cols, recent);
+      const generated = await generateBoardText(ctx.env, AI_PROMPTS[kind], ctx.board, recent);
       if (fitsBoard(ctx, generated)) text = generated;
     } catch (e) {
       console.warn(`AI ${kind} failed, falling back to built-in list`, e);
@@ -151,17 +153,19 @@ async function weather(ctx: Ctx): Promise<Rendered> {
   const lo = Math.round(f.daily.temperature_2m_min[0]);
   const rain = f.daily.precipitation_probability_max[0] ?? 0;
   const tmrw = describeWeather(f.daily.weather_code[1]);
+  // The Note has no degree sign (its code 62 is a heart), so temperatures are bare numbers there.
+  const deg = ctx.board === "flagship" ? "°" : "";
 
   const lines =
     ctx.rows >= 6
       ? [
           loc.name.split(",")[0],
-          `{${now.color}} NOW ${t}° ${now.label}`,
-          `HI ${hi}° LO ${lo}°`,
+          `{${now.color}} NOW ${t}${deg} ${now.label}`,
+          `HI ${hi}${deg} LO ${lo}${deg}`,
           `RAIN ${rain}%`,
-          `TMRW ${Math.round(f.daily.temperature_2m_max[1])}°/${Math.round(f.daily.temperature_2m_min[1])}° ${tmrw.label}`,
+          `TMRW ${Math.round(f.daily.temperature_2m_max[1])}${deg}/${Math.round(f.daily.temperature_2m_min[1])}${deg} ${tmrw.label}`,
         ]
-      : [`{${now.color}} ${t}° ${now.label}`, `HI ${hi}° LO ${lo}°`, `RAIN ${rain}%`];
+      : [`{${now.color}} ${t}${deg} ${now.label}`, `HI ${hi}${deg} LO ${lo}${deg}`, `RAIN ${rain}%`];
   const text = lines.join("\n");
   return { layout: fit(ctx, text, 1).layout, text };
 }
@@ -220,9 +224,9 @@ async function askClaude(config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   if (!prompt) throw new RenderError("Write a prompt for Claude.");
   if (!ctx.env.ANTHROPIC_API_KEY) throw new RenderError("Claude isn't set up. Add the ANTHROPIC_API_KEY secret to enable it.");
   const recent = ctx.state.recent ?? [];
-  let text = await generateBoardText(ctx.env, prompt, ctx.rows, ctx.cols, recent);
+  let text = await generateBoardText(ctx.env, prompt, ctx.board, recent);
   if (!fitsBoard(ctx, text)) {
-    text = await generateBoardText(ctx.env, `${prompt}\n\nKeep it shorter: it must fit ${ctx.rows} lines of ${ctx.cols} characters.`, ctx.rows, ctx.cols, recent);
+    text = await generateBoardText(ctx.env, `${prompt}\n\nKeep it shorter: it must fit ${ctx.rows} lines of ${ctx.cols} characters.`, ctx.board, recent);
   }
   return { layout: fit(ctx, text, 3).layout, text, state: { recent: [text, ...recent].slice(0, 10) } };
 }

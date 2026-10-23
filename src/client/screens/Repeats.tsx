@@ -37,7 +37,7 @@ const IDEAS: { label: string; input: NoteInput; needs?: "location" | "ai" }[] = 
 ];
 
 export function Repeats() {
-  const { settings, size, toast } = useApp();
+  const { settings, toast } = useApp();
   const [notes, setNotes] = useState<Note[] | null>(null);
 
   const load = useCallback(async () => {
@@ -105,7 +105,7 @@ export function Repeats() {
                 <Switch checked={n.enabled} onChange={(v) => toggle(n, v)} label={`${n.enabled ? "Pause" : "Resume"} ${n.title ?? "note"}`} />
               </div>
               <button className="link-btn stack-sm" onClick={() => navigate({ name: "compose", id: n.id })}>
-                <NotePreview content={n.content} size={size} boardColor={settings.boardColor} />
+                <NotePreview content={n.content} board={settings.boardType} boardColor={settings.boardColor} />
                 <span className="muted small">
                   {describeSchedule(n.schedule)}
                   {n.enabled && n.nextRunAt

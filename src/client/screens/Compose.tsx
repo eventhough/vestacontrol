@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { COLOR_HEX, Layout, emptyLayout, normalizeLayout } from "../../shared/characters";
+import { COLOR_HEX, Layout, SYMBOL_62, emptyLayout, glyph, normalizeLayout } from "../../shared/characters";
 import { Align, formatText } from "../../shared/formatter";
 import type { Favorite, NoteContent, NoteInput, WidgetConfig, WidgetType } from "../../shared/types";
 import { api } from "../api";
@@ -91,7 +91,8 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     return { type: "widget", widget, config };
   }, [kind, text, align, abbreviate, layout, widget, config]);
 
-  const formatted = useMemo(() => formatText(text, { ...size, align, abbreviate }), [text, size, align, abbreviate]);
+  const symbol62 = glyph(SYMBOL_62, settings.boardType);
+  const formatted = useMemo(() => formatText(text, { board: settings.boardType, ...size, align, abbreviate }), [text, settings.boardType, size, align, abbreviate]);
 
   // Widgets render on the server; refresh the preview when their settings change.
   useEffect(() => setServerPreview(null), [widget, config]);
@@ -242,8 +243,9 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
             {COLORS.map(([name, code]) => (
               <button key={name} type="button" className="color-dot" style={{ background: COLOR_HEX[code] }} aria-label={`Insert ${name} tile`} onClick={() => insertToken(`{${name}}`)} />
             ))}
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => insertToken("°")}>
-              °
+            {/* Code 62: a heart on the Note, a degree sign on the Flagship. */}
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => insertToken(symbol62)} aria-label={`Insert ${symbol62}`}>
+              {symbol62}
             </button>
           </div>
           <div className="row wrap">
@@ -351,7 +353,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
                     }}
                   >
                     <strong>{f.name}</strong>
-                    <NotePreview content={f.content} size={size} boardColor={settings.boardColor} />
+                    <NotePreview content={f.content} board={settings.boardType} boardColor={settings.boardColor} />
                   </button>
                   <button
                     type="button"

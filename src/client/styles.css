@@ -265,6 +265,11 @@ code {
 .tile span {
   font-size: 72cqw;
 }
+/* Draw the Note's heart (code 62) as a flat glyph, not a color emoji. */
+.tile span,
+.swatch {
+  font-variant-emoji: text;
+}
 .tile::after {
   content: "";
   position: absolute;

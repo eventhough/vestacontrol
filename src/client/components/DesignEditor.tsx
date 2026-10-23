@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BLANK, CODE_TO_CHAR, COLOR_HEX, Layout, PALETTE, charToCode } from "../../shared/characters";
+import { BLANK, COLOR_HEX, Layout, PALETTE, boardTypeOf, charToCode, glyph } from "../../shared/characters";
 import { Board } from "./Board";
 import { Segmented } from "./ui";
 
@@ -17,6 +17,7 @@ export function DesignEditor({ layout, onChange, boardColor }: { layout: Layout;
   const typeInput = useRef<HTMLInputElement>(null);
   const rows = layout.length;
   const cols = layout[0]?.length ?? 0;
+  const board = boardTypeOf(layout);
 
   const commit = (next: Layout, snapshot = true) => {
     if (snapshot) setUndo((u) => [...u.slice(-30), layout]);
@@ -49,7 +50,7 @@ export function DesignEditor({ layout, onChange, boardColor }: { layout: Layout;
     const next = layout.map((row) => [...row]);
     let pos = cursor;
     for (const ch of Array.from(text)) {
-      const code = charToCode(ch);
+      const code = charToCode(ch, board);
       if (code === undefined) continue;
       next[pos.r][pos.c] = code;
       pos = advance(pos, 1);
@@ -109,7 +110,7 @@ export function DesignEditor({ layout, onChange, boardColor }: { layout: Layout;
             onChange={(e) => typeChars(e.target.value)}
             onKeyDown={onKeyDown}
           />
-          <p className="muted small">Tip: type 🟥🟦 emoji to place colors. Enter jumps to the next row.</p>
+          <p className="muted small">Tip: type 🟥🟦 emoji to place colors{board === "note" ? ", or ❤️ for a heart" : ""}. Enter jumps to the next row.</p>
         </div>
       ) : (
         <div className="palette">
@@ -137,11 +138,11 @@ export function DesignEditor({ layout, onChange, boardColor }: { layout: Layout;
                 type="button"
                 className={`swatch${brush === code ? " active" : ""}`}
                 style={COLOR_HEX[code] ? { background: COLOR_HEX[code] } : undefined}
-                title={COLOR_NAMES[code] ?? CODE_TO_CHAR[code]}
-                aria-label={COLOR_NAMES[code] ?? CODE_TO_CHAR[code]}
+                title={COLOR_NAMES[code] ?? glyph(code, board)}
+                aria-label={COLOR_NAMES[code] ?? glyph(code, board)}
                 onClick={() => setBrush(code)}
               >
-                {COLOR_HEX[code] ? "" : CODE_TO_CHAR[code]}
+                {COLOR_HEX[code] ? "" : glyph(code, board)}
               </button>
             ))}
           </div>

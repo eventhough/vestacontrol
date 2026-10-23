@@ -1,3 +1,5 @@
+import type { BoardType } from "./characters";
+
 // Abbreviations used to squeeze messages onto the board. They are only applied
 // when a message doesn't fit, and in tier order: tier 1 reads naturally, tier 2
 // is texting-style shorthand, tier 3 drops filler words entirely.
@@ -48,9 +50,14 @@ export const ABBREVIATIONS: Abbreviation[] = [
   ...TIER3.map((word) => ({ word, short: "", tier: 3 as const })),
 ];
 
-export function abbreviationFor(word: string, maxTier: number): Abbreviation | undefined {
+// The Note has a heart character, which reads naturally in place of LOVE.
+const NOTE_ONLY: Abbreviation[] = [{ word: "LOVE", short: "❤", tier: 1 }];
+
+export function abbreviationFor(word: string, maxTier: number, board: BoardType): Abbreviation | undefined {
   let best: Abbreviation | undefined;
-  for (const a of ABBREVIATIONS) {
+  for (const a of board === "note" ? [...NOTE_ONLY, ...ABBREVIATIONS] : ABBREVIATIONS) {
+    // The Note has no degree sign, so an abbreviation to "°" would erase the word.
+    if (board === "note" && a.short.includes("°")) continue;
     if (a.word === word && a.tier <= maxTier && (!best || a.tier < best.tier)) best = a;
   }
   return best;

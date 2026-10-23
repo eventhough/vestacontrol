@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { formatText, textToCells } from "../src/shared/formatter";
 import { layoutToText } from "../src/shared/characters";
 
-const NOTE = { rows: 3, cols: 15 };
+const NOTE = { board: "note" as const, rows: 3, cols: 15 };
+const FLAGSHIP = { board: "flagship" as const, rows: 6, cols: 22 };
 
 describe("formatText", () => {
   it("centers a short message", () => {
@@ -50,8 +51,16 @@ describe("formatText", () => {
 
 describe("textToCells", () => {
   it("parses color tokens, emoji and substitutions", () => {
-    expect(textToCells("{red}{63}🟦’A")).toEqual([63, 63, 67, 52, 1]);
-    expect(textToCells("72°")).toEqual([33, 28, 62]);
+    expect(textToCells("{red}{63}🟦’A", "note")).toEqual([63, 63, 67, 52, 1]);
+  });
+
+  it("uses code 62 as a heart on the Note and a degree sign on the Flagship", () => {
+    expect(textToCells("72°", "flagship")).toEqual([33, 28, 62]);
+    expect(textToCells("72°", "note")).toEqual([33, 28]);
+    expect(textToCells("❤️♥{heart}", "note")).toEqual([62, 62, 62]);
+    expect(textToCells("❤️{heart}", "flagship")).toEqual([63, 63]);
+    expect(textToCells("{degree}", "flagship")).toEqual([62]);
+    expect(textToCells("{degree}", "note")).toEqual([]);
   });
 });
 
@@ -64,8 +73,22 @@ describe("abbreviation tiers", () => {
   });
 
   it("works on the flagship without abbreviating", () => {
-    const r = formatText("Dentist appointment tomorrow afternoon", { rows: 6, cols: 22 });
+    const r = formatText("Dentist appointment tomorrow afternoon", FLAGSHIP);
     expect(r.fits).toBe(true);
     expect(r.abbreviations).toEqual([]);
+  });
+});
+
+describe("board-specific abbreviations", () => {
+  it("shortens LOVE to a heart on the Note", () => {
+    const r = formatText("Have a great day at school, love you lots, Mom", NOTE);
+    expect(r.fits).toBe(true);
+    expect(r.abbreviations).toEqual([{ from: "LOVE", to: "❤" }]);
+    expect(layoutToText(r.layout)).toContain("❤ YOU LOTS, MOM");
+  });
+
+  it("never abbreviates to a degree sign on the Note", () => {
+    const r = formatText("It is seventy two degrees outside today friends", NOTE);
+    expect(r.abbreviations.map((a) => a.to)).not.toContain("°");
   });
 });
