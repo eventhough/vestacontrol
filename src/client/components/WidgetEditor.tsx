@@ -38,7 +38,7 @@ export function WidgetEditor({
       </div>
       <p className="muted">{WIDGETS[widget].description}</p>
 
-      {(widget === "quote" || widget === "question" || widget === "joke" || widget === "fact") && (
+      {(widget === "quote" || widget === "question" || widget === "joke" || widget === "fact" || widget === "word") && (
         <Field
           label="Where should it come from?"
           hint={settings.aiAvailable ? "Claude writes a fresh one every time, sized to fit your board." : "Add an Anthropic API key to let Claude write fresh ones (see README)."}

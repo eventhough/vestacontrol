@@ -5,7 +5,7 @@ import { formatText } from "../shared/formatter";
 import { parseDate, utcToLocalDate, zonedParts } from "../shared/schedule";
 import type { NoteContent, WidgetConfig, WidgetType } from "../shared/types";
 import { AI_PROMPTS, generateBoardText } from "./ai";
-import { FACTS, JOKES, QUESTIONS, QUOTES } from "./content";
+import { FACTS, JOKES, QUESTIONS, QUOTES, WORDS } from "./content";
 import type { Settings } from "./db";
 import type { Env } from "./env";
 
@@ -60,6 +60,7 @@ async function renderWidget(widget: WidgetType, config: WidgetConfig, ctx: Ctx):
     case "question":
     case "joke":
     case "fact":
+    case "word":
       return ofTheDay(widget, config, ctx);
     case "countdown":
       return countdown(config, ctx);
@@ -74,8 +75,8 @@ async function renderWidget(widget: WidgetType, config: WidgetConfig, ctx: Ctx):
 
 // ---------- of the day ----------
 
-const LISTS = { quote: QUOTES, question: QUESTIONS, joke: JOKES, fact: FACTS };
-const HEADERS = { quote: "", question: "QUESTION OF THE DAY", joke: "", fact: "FUN FACT" };
+const LISTS = { quote: QUOTES, question: QUESTIONS, joke: JOKES, fact: FACTS, word: WORDS };
+const HEADERS = { quote: "", question: "QUESTION OF THE DAY", joke: "", fact: "FUN FACT", word: "WORD OF THE DAY" };
 
 async function ofTheDay(kind: keyof typeof LISTS, config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   const recent = ctx.state.recent ?? [];
