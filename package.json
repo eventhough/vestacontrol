@@ -1,0 +1,33 @@
+{
+  "name": "vestacontrol",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "wrangler d1 migrations apply vestacontrol --local && wrangler dev --port 8787 --test-scheduled",
+    "dev:web": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.worker.json",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run build",
+    "deploy": "npm run build && node scripts/ensure-d1.mjs && wrangler d1 migrations apply vestacontrol --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "hono": "^4.13.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261023.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.6",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5",
+    "vitest": "^3.2.7",
+    "wrangler": "^4.152.0"
+  }
+}
