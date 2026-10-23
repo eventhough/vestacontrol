@@ -30,3 +30,14 @@ describe("validation", () => {
     expect(() => validateSettings({ timezone: "Mars/Olympus" })).toThrow(ValidationError);
   });
 });
+
+describe("characters", () => {
+  it("shows code 62 per board", async () => {
+    const { glyph, layoutToText, emptyLayout } = await import("../src/shared/characters");
+    expect(glyph(62, "note")).toBe("❤");
+    expect(glyph(62, "flagship")).toBe("°");
+    const note = emptyLayout(3, 15);
+    note[0][0] = 62;
+    expect(layoutToText(note)).toBe("❤");
+  });
+});

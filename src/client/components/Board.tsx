@@ -1,4 +1,4 @@
-import { CODE_TO_CHAR, COLOR_HEX, Layout, isColor } from "../../shared/characters";
+import { COLOR_HEX, Layout, boardTypeOf, glyph, isColor } from "../../shared/characters";
 
 interface Props {
   layout: Layout;
@@ -18,6 +18,7 @@ export function tileStyle(code: number, board: "black" | "white"): { background?
 
 export function Board({ layout, color = "black", size = "lg", onTileDown, onTileEnter, cursor }: Props) {
   const cols = layout[0]?.length ?? 0;
+  const board = boardTypeOf(layout);
   return (
     <div
       className={`board board-${color} board-${size}${onTileDown ? " board-edit" : ""}`}
@@ -41,7 +42,7 @@ export function Board({ layout, color = "black", size = "lg", onTileDown, onTile
             }
             onPointerEnter={onTileEnter ? (e) => e.buttons === 1 && onTileEnter(r, c) : undefined}
           >
-            {!isColor(code) && code !== 0 ? <span>{CODE_TO_CHAR[code] ?? ""}</span> : null}
+            {!isColor(code) && code !== 0 ? <span>{glyph(code, board)}</span> : null}
           </div>
         )),
       )}

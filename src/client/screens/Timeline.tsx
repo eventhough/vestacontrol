@@ -19,7 +19,7 @@ export function dayLabel(date: string, tz: string): string {
 }
 
 export function Timeline() {
-  const { settings, size, toast, refreshSettings } = useApp();
+  const { settings, toast, refreshSettings } = useApp();
   const tz = settings.timezone;
   const [items, setItems] = useState<TimelineItem[] | null>(null);
   const [notes, setNotes] = useState<Record<string, Note>>({});
@@ -165,7 +165,7 @@ export function Timeline() {
                         <div className="tl-time">{formatTime12(utcToLocalTime(it.at, tz))}</div>
                         <div className="tl-body">
                           <div className="tl-title">{n.title || contentSummary(n.content)}</div>
-                          <NotePreview content={n.content} size={size} boardColor={settings.boardColor} />
+                          <NotePreview content={n.content} board={settings.boardType} boardColor={settings.boardColor} />
                           <div className="tl-meta muted small">
                             {n.author ? `From ${n.author}` : "One time"}
                             {n.lastError ? <span className="error"> · last send failed</span> : null}

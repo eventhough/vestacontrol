@@ -2,12 +2,14 @@
 // — when the message is too long — abbreviates words until it fits.
 
 import { abbreviationFor } from "./abbreviations";
-import { BLANK, COLOR_CODES, ColorName, Layout, charToCode, emptyLayout } from "./characters";
+import { BLANK, BoardType, COLOR_CODES, ColorName, Layout, charToCode, emptyLayout } from "./characters";
 
 export type Align = "center" | "left" | "right";
 export type VAlign = "middle" | "top" | "bottom";
 
 export interface FormatOptions {
+  /** Decides how code 62 is used: a heart on the Note, a degree sign on the Flagship. */
+  board: BoardType;
   rows: number;
   cols: number;
   align?: Align;
@@ -30,20 +32,27 @@ interface Word {
 
 const TOKEN = /\{([a-z]+|\d{1,2})\}/gi;
 
-/** Converts a run of text (no spaces) into character codes. Supports {red} / {63} tokens and color emoji. */
-export function textToCells(text: string): number[] {
+/** Symbol tokens, typed as {heart} or {degree}. They resolve per board like the characters themselves. */
+const SYMBOL_TOKENS: Record<string, string> = { heart: "❤", degree: "°" };
+
+/** Converts a run of text (no spaces) into character codes. Supports {red} / {63} / {heart} tokens and emoji. */
+export function textToCells(text: string, board: BoardType): number[] {
   const cells: number[] = [];
   let last = 0;
   const pushChars = (s: string) => {
     for (const ch of Array.from(s.replace(/️/g, ""))) {
-      const code = charToCode(ch);
+      const code = charToCode(ch, board);
       if (code !== undefined) cells.push(code);
     }
   };
   for (const m of text.matchAll(TOKEN)) {
     pushChars(text.slice(last, m.index));
     const name = m[1].toLowerCase();
-    const code = /^\d+$/.test(name) ? Number(name) : COLOR_CODES[name as ColorName];
+    const code = /^\d+$/.test(name)
+      ? Number(name)
+      : name in SYMBOL_TOKENS
+        ? charToCode(SYMBOL_TOKENS[name], board)
+        : COLOR_CODES[name as ColorName];
     if (code !== undefined && code >= 0 && code <= 71) cells.push(code);
     last = (m.index ?? 0) + m[0].length;
   }
@@ -68,7 +77,7 @@ interface Wrapped {
   broken: boolean;
 }
 
-function wrap(paragraphs: Word[][], cols: number): Wrapped {
+function wrap(paragraphs: Word[][], cols: number, board: BoardType): Wrapped {
   const lines: number[][] = [];
   let broken = false;
   for (const para of paragraphs) {
@@ -78,7 +87,7 @@ function wrap(paragraphs: Word[][], cols: number): Wrapped {
       line = [];
     };
     for (const word of para) {
-      let cells = textToCells(word.text);
+      let cells = textToCells(word.text, board);
       if (cells.length === 0) continue;
       if (line.length > 0 && line.length + 1 + cells.length <= cols) {
         line.push(BLANK, ...cells);
@@ -106,19 +115,19 @@ function core(word: string): [string, string, string] {
 }
 
 export function formatText(text: string, opts: FormatOptions): FormatResult {
-  const { rows, cols, align = "center", valign = "middle", abbreviate = 2 } = opts;
+  const { board, rows, cols, align = "center", valign = "middle", abbreviate = 2 } = opts;
   const paragraphs = parse(text);
   const used: { from: string; to: string }[] = [];
   const fitsNow = (w: Wrapped) => w.lines.length <= rows && !w.broken;
 
-  let wrapped = wrap(paragraphs, cols);
+  let wrapped = wrap(paragraphs, cols, board);
   for (let tier = 1; tier <= abbreviate && !fitsNow(wrapped); tier++) {
     // Candidate words at this tier, biggest savings first.
     const candidates: { p: number; i: number; save: number }[] = [];
     paragraphs.forEach((para, p) =>
       para.forEach((w, i) => {
         const [pre, c, post] = core(w.text);
-        const a = abbreviationFor(c, tier);
+        const a = abbreviationFor(c, tier, board);
         if (!a || a.tier !== tier) return;
         // Only drop a filler word when it isn't attached to punctuation and isn't the whole line.
         const canDrop = !pre && !post && para.filter((x) => x.text).length > 1;
@@ -131,12 +140,12 @@ export function formatText(text: string, opts: FormatOptions): FormatResult {
     for (const { p, i } of candidates) {
       const w = paragraphs[p][i];
       const [pre, c, post] = core(w.text);
-      const a = abbreviationFor(c, tier);
+      const a = abbreviationFor(c, tier, board);
       if (!a) continue;
       if (a.short === "" && paragraphs[p].filter((x) => x.text).length <= 1) continue;
       w.text = pre + a.short + post;
       used.push({ from: c, to: a.short || "(removed)" });
-      wrapped = wrap(paragraphs, cols);
+      wrapped = wrap(paragraphs, cols, board);
       if (fitsNow(wrapped)) break;
     }
   }
