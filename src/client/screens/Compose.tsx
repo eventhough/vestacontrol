@@ -91,6 +91,8 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     return { type: "widget", widget, config };
   }, [kind, text, align, abbreviate, layout, widget, config]);
 
+  // Repeating notes can't protect themselves from other repeating notes, so they never carry a hold.
+  const effectiveHold = draft.mode === "repeat" ? 0 : holdMinutes;
   const symbol62 = glyph(SYMBOL_62, settings.boardType);
   const formatted = useMemo(() => formatText(text, { board: settings.boardType, ...size, align, abbreviate }), [text, settings.boardType, size, align, abbreviate]);
 
@@ -135,14 +137,14 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     setBusy(true);
     try {
       if (draft.mode === "now") {
-        await api.send(content, { author: author || null, title: title || null, holdMinutes });
+        await api.send(content, { author: author || null, title: title || null, holdMinutes: effectiveHold });
         toast("Sent to your Vestaboard ✨");
         navigate({ name: "timeline" });
         return;
       }
       const schedule = draftToSchedule(draft, tz);
       if (!schedule) throw new Error("Pick a date and time.");
-      const input: NoteInput = { title: title || null, content, schedule, author: author || null, holdMinutes, enabled };
+      const input: NoteInput = { title: title || null, content, schedule, author: author || null, holdMinutes: effectiveHold, enabled };
       if (id) await api.updateNote(id, input);
       else await api.createNote(input);
       toast(id ? "Saved" : draft.mode === "repeat" ? "Repeating note created" : "Scheduled!");
@@ -159,7 +161,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     if (problem) return toast(problem, "error");
     setBusy(true);
     try {
-      await api.send(content, { author: author || null, title: title || null, holdMinutes });
+      await api.send(content, { author: author || null, title: title || null, holdMinutes: effectiveHold });
       toast("Sent to your Vestaboard ✨");
     } catch (e) {
       toast(errorMessage(e), "error");

@@ -79,12 +79,14 @@ export function validateNoteInput(body: unknown): Required<Omit<NoteInput, "enab
   const b = body as NoteInput;
   const hold = b.holdMinutes ?? 0;
   check(Number.isInteger(hold) && hold >= 0 && hold <= 24 * 60, "Invalid hold time");
+  const schedule = validateSchedule(b.schedule);
   return {
     title: typeof b.title === "string" ? b.title.slice(0, 80) || null : null,
     content: validateContent(b.content),
-    schedule: validateSchedule(b.schedule),
+    schedule,
     author: typeof b.author === "string" ? b.author.slice(0, 40) || null : null,
-    holdMinutes: hold,
+    // Only one-time notes can protect themselves from repeating notes.
+    holdMinutes: schedule.type === "once" ? hold : 0,
     enabled: b.enabled !== false,
   };
 }

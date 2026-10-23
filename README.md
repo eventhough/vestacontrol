@@ -19,7 +19,7 @@ A mobile web app for scheduling notes, designs and daily surprises on your **Ves
   - ✨ Ask Claude (optional): write any prompt and Claude writes content sized to fit your board
 - **Edit, pause or delete** any note; one-tap **quick ideas** for common repeating notes
 - **Quiet hours**: repeating notes won't flip the board overnight
-- **"Keep on board for at least…"**: so a birthday message isn't replaced 10 minutes later by the hourly weather
+- **Protect a message from repeating notes** (for one-time and "send now" messages): so a birthday message isn't replaced 10 minutes later by the hourly weather. Repeating notes that come up meanwhile are skipped, not delayed, and **Release** on the Timeline ends the protection early.
 - **Favorites** for reusing designs and messages
 - **History** of everything sent (or failed or skipped), with "send again"
 - **"From"** name on notes, so everyone knows who left the message
