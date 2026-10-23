@@ -2,7 +2,7 @@
 
 A mobile web app for scheduling notes, designs and daily surprises on your **Vestaboard Note** or **Vestaboard Flagship**, built for the whole household. There are no user accounts: everyone shares one household password.
 
-**Live app:** https://vestacontrol.kwubuilds.workers.dev. It's already set up, so you only need to sign in. If you're setting up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes) below.
+To set up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes) below.
 
 ## Features
 
