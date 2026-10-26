@@ -117,7 +117,7 @@ function core(word: string): [string, string, string] {
 export function formatText(text: string, opts: FormatOptions): FormatResult {
   const { board, rows, cols, align = "center", valign = "middle", abbreviate = 2 } = opts;
   const paragraphs = parse(text);
-  const used: { from: string; to: string }[] = [];
+  const used: { from: string; to: string; word: Word; before: string }[] = [];
   const fitsNow = (w: Wrapped) => w.lines.length <= rows && !w.broken;
 
   let wrapped = wrap(paragraphs, cols, board);
@@ -143,10 +143,28 @@ export function formatText(text: string, opts: FormatOptions): FormatResult {
       const a = abbreviationFor(c, tier, board);
       if (!a) continue;
       if (a.short === "" && paragraphs[p].filter((x) => x.text).length <= 1) continue;
+      used.push({ from: c, to: a.short || "(removed)", word: w, before: w.text });
       w.text = pre + a.short + post;
-      used.push({ from: c, to: a.short || "(removed)" });
       wrapped = wrap(paragraphs, cols, board);
       if (fitsNow(wrapped)) break;
+    }
+  }
+
+  // Shortening goes biggest-savings-first, so an early pick can turn out to be
+  // unnecessary once a later one makes the message fit. Undo any shortening the
+  // message still fits without (newest first, so chained shortenings unwind in order).
+  if (fitsNow(wrapped)) {
+    for (let k = used.length - 1; k >= 0; k--) {
+      const { word, before } = used[k];
+      const after = word.text;
+      word.text = before;
+      const tryWrap = wrap(paragraphs, cols, board);
+      if (fitsNow(tryWrap)) {
+        wrapped = tryWrap;
+        used.splice(k, 1);
+      } else {
+        word.text = after;
+      }
     }
   }
 
@@ -158,5 +176,5 @@ export function formatText(text: string, opts: FormatOptions): FormatResult {
     line.forEach((code, c) => (layout[top + r][left + c] = code));
   });
 
-  return { layout, fits: fitsNow(wrapped), lineCount: wrapped.lines.length, abbreviations: used };
+  return { layout, fits: fitsNow(wrapped), lineCount: wrapped.lines.length, abbreviations: used.map(({ from, to }) => ({ from, to })) };
 }
