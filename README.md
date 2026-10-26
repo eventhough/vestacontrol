@@ -4,6 +4,23 @@ A mobile web app for scheduling notes, designs and daily surprises on your **Ves
 
 To set up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes) below.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/timeline.png" width="250" alt="Timeline: what's on the board now and upcoming notes"><br><b>Timeline</b><br><sub>What's on the board now, and everything coming up</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/compose.png" width="250" alt="Message composer with a live board preview and automatic word shortening"><br><b>Write a message</b><br><sub>Live preview, with words shortened only when needed</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/design.png" width="250" alt="Design editor painting colored tiles"><br><b>Design</b><br><sub>Paint tiles with any color, letter or symbol</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/smart.png" width="250" alt="Smart notes, with Smart mix taking turns between jokes and words"><br><b>Smart notes</b><br><sub>Weather, quotes, jokes, word of the day, Smart mix and more</sub></td>
+    <td align="center"><img src="docs/screenshots/schedule.png" width="250" alt="Scheduling a note to repeat on weekdays"><br><b>Schedule</b><br><sub>Send now, later, or on a repeating schedule</sub></td>
+    <td align="center"><img src="docs/screenshots/repeats.png" width="250" alt="List of repeating notes with on/off switches"><br><b>Repeating notes</b><br><sub>Pause, edit or add with one tap</sub></td>
+  </tr>
+</table>
+
+<sub>Screenshots use made-up demo data on a Vestaboard Note.</sub>
+
 ## Features
 
 - **Timeline** of everything coming up, plus a live view of what's on the board right now
