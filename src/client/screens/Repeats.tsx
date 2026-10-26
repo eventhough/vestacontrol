@@ -117,7 +117,7 @@ export function Repeats() {
                 <span className="muted small">
                   {describeSchedule(n.schedule)}
                   {n.enabled && n.nextRunAt
-                    ? ` · next ${dayLabel(utcToLocalDate(n.nextRunAt, settings.timezone), settings.timezone).toLowerCase()} ${formatTime12(utcToLocalTime(n.nextRunAt, settings.timezone))}`
+                    ? ` · next ${dayLabel(utcToLocalDate(n.nextRunAt, settings.timezone), settings.timezone).replace(/^(Today|Tomorrow)$/, (d) => d.toLowerCase())} ${formatTime12(utcToLocalTime(n.nextRunAt, settings.timezone))}`
                     : n.enabled
                       ? " · finished"
                       : " · paused"}

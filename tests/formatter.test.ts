@@ -92,3 +92,19 @@ describe("board-specific abbreviations", () => {
     expect(r.abbreviations.map((a) => a.to)).not.toContain("°");
   });
 });
+
+describe("only keeps shortening that's needed", () => {
+  it("undoes an early pick when a later one alone makes it fit", () => {
+    // MORNING -> MORN saves the most, but GREAT -> GR8 alone is enough.
+    const r = formatText("{red}{orange}{yellow}\nGood morning!\nHave a great day", NOTE);
+    expect(r.fits).toBe(true);
+    expect(r.abbreviations).toEqual([{ from: "GREAT", to: "GR8" }]);
+    expect(layoutToText(r.layout)).toContain("GOOD MORNING!");
+  });
+
+  it("keeps every shortening that is really needed", () => {
+    const r = formatText("Dentist appointment tomorrow afternoon, love you!", NOTE);
+    expect(r.fits).toBe(true);
+    expect(r.abbreviations.map((a) => a.from).sort()).toEqual(["AFTERNOON", "APPOINTMENT"]);
+  });
+});
