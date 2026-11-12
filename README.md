@@ -61,23 +61,32 @@ Phone browser ──▶ Cloudflare Worker (API + static React app)
 
 **Why Cloudflare?** For one household it's **free**. The Workers free tier includes cron triggers that run every minute (which this app needs for on-time scheduling), and D1 includes a free SQLite database. Vercel's free plan only runs cron jobs once a day, and DigitalOcean starts at about $5/month.
 
-## Deploy (one-time setup, about 10 minutes)
+## Deploy your own (one-time setup, about 15 minutes)
 
-Once this is set up, every push to `main` deploys automatically through GitHub Actions.
+**You'll need:**
+- A Vestaboard Note or Flagship that's connected to Wi-Fi
+- A GitHub account
+- A free Cloudflare account (step 2)
+- Optionally, an Anthropic API key for the ✨ Claude features
 
-1. **Create a free Cloudflare account** at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up). You don't need a domain or a credit card.
-2. **Pick your `workers.dev` subdomain**: click **Workers & Pages** in the sidebar once. A new account is asked to choose a free subdomain (for example `yourname.workers.dev`). The app will live at `vestacontrol.<subdomain>.workers.dev`. You don't need to create a Worker yourself; the deploy does that.
-3. **Create an API token**: go to [*My Profile → API Tokens*](https://dash.cloudflare.com/profile/api-tokens) → **Create Token**, then click **Use template** next to **Edit Cloudflare Workers**.
+**Cost:** free for one household. The app runs about 1,440 scheduled checks a day plus your own visits, far below Cloudflare's free-plan limits. The only paid part is Claude, which is optional (see [Claude features](#claude-features-optional)).
+
+1. **Get your own copy of this repo.** Click **Fork** at the top of this page. Then open your fork's **Actions** tab and click **I understand my workflows, go ahead and enable them**. GitHub turns off Actions on new forks, and Actions is what deploys the app.
+   > A fork of a public repo is public too. That's fine for most people: the code holds no secrets, and the deploy log hides your app's address. If you'd rather keep your copy private, use [Import repository](https://github.com/new/import) with this repo's URL and choose **Private** instead. You'll then pull in updates yourself (see [Getting updates](#getting-updates)).
+2. **Create a free Cloudflare account** at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up). You don't need a domain or a credit card.
+3. **Pick your `workers.dev` subdomain**: click **Workers & Pages** in the sidebar once. A new account is asked to choose a free subdomain (for example `yourname.workers.dev`). The app will live at `vestacontrol.<subdomain>.workers.dev`. You don't need to create a Worker yourself; the deploy does that.
+4. **Create an API token**: go to [*My Profile → API Tokens*](https://dash.cloudflare.com/profile/api-tokens) → **Create Token**, then click **Use template** next to **Edit Cloudflare Workers**.
    - Under *Permissions*, click **+ Add more** and add **Account → D1 → Edit**. The template doesn't include it, and the deploy needs it to create the database.
    - Set *Account Resources* to your account and *Zone Resources* to **All zones**.
    - Create the token and **copy it right away**. Cloudflare only shows it once.
-4. **Find your Account ID**: it's shown in the right sidebar of the **Workers & Pages** overview page.
-5. **Add GitHub secrets**: in this repo, go to *Settings → Secrets and variables → Actions → New repository secret* and add:
+5. **Find your Account ID**: it's shown in the right sidebar of the **Workers & Pages** overview page.
+6. **Add GitHub secrets**: in your copy of the repo, go to *Settings → Secrets and variables → Actions → New repository secret* and add:
    - `CLOUDFLARE_API_TOKEN`
    - `CLOUDFLARE_ACCOUNT_ID`
    - `ANTHROPIC_API_KEY` *(optional; see [Claude features](#claude-features-optional))*
-6. **Push to `main`** (or merge a PR). The workflow creates the database, applies migrations and deploys. To find your app's address, open the Cloudflare dashboard and go to **Workers & Pages → vestacontrol**. The deploy log hides it, since this repo may be public.
-7. **Open it on your phone right away.** The setup wizard walks you through creating the household password, choosing your board, connecting the Vestaboard API, and setting your time zone and location.
+7. **Deploy**: in your copy of the repo, open **Actions → CI & Deploy → Run workflow**, keep the branch as `main`, and click **Run workflow**. It takes about a minute: it creates the database, sets it up and deploys the app. From then on, every change to `main` deploys automatically.
+8. **Find your app's address** in the Cloudflare dashboard under **Workers & Pages → vestacontrol**. The deploy log hides it, since your repo may be public.
+9. **Open it on your phone right away.** The setup wizard walks you through creating the household password, choosing your board, connecting the Vestaboard API, and setting your time zone and location.
 
 > **Whoever opens the site first sets the household password**, so do it as soon as the first deploy finishes.
 
@@ -85,7 +94,34 @@ Once this is set up, every push to `main` deploys automatically through GitHub A
 
 **Deploy failed with a permissions error?** The API token is usually missing **D1 → Edit**. Edit the token in Cloudflare, then re-run the workflow.
 
+**Already have something named `vestacontrol` in Cloudflare?** The deploy uses a Worker and a D1 database with that name: it replaces a Worker of that name and reuses a database of that name. To give the Worker a different name, change `name` in `wrangler.toml` before your first deploy. The database is still called `vestacontrol`.
+
 **Custom domain (optional):** in the Cloudflare dashboard, open *Workers & Pages → vestacontrol → Settings → Domains & Routes*.
+
+### Getting updates
+
+- **If you forked:** on your fork's GitHub page, click **Sync fork → Update branch**. That updates `main`, which deploys automatically. If no deploy starts (check the **Actions** tab), run it yourself with **Actions → CI & Deploy → Run workflow**. Any database changes are applied during the deploy.
+- **If you imported a private copy:** pull the changes in with git, then push:
+  ```bash
+  git remote add upstream https://github.com/eventhough/vestacontrol.git   # once
+  git pull upstream main
+  git push origin main
+  ```
+
+### Forgot the household password?
+
+1. In the Cloudflare dashboard, open **D1** (under *Storage & Databases*), select the **vestacontrol** database and open its **Console**.
+2. Run:
+   ```sql
+   DELETE FROM settings WHERE key IN ('passwordHash', 'sessionSecret');
+   ```
+3. Open your app right away. The setup wizard appears, and whoever gets there first sets the new password. Every phone is signed out.
+
+Your notes, history and Vestaboard connection are kept. In the wizard, tap **I'll do this later** on the "Connect your board" step to keep your saved key. On the last step, search for your location again; leaving it empty clears it. You can also re-add it later in Settings.
+
+### Removing Vestacontrol
+
+In the Cloudflare dashboard, delete the **vestacontrol** Worker (*Workers & Pages → vestacontrol → Settings*) and the **vestacontrol** D1 database. Then delete the API token you created in step 4, and your copy of the repo if you no longer need it.
 
 ### Getting your Vestaboard API key
 
@@ -131,6 +167,8 @@ How the household password works:
 Also turn on two-factor sign-in for the accounts behind the app: GitHub, Cloudflare, Anthropic and Vestaboard.
 
 ## Develop locally
+
+Requires Node.js 22, the version the CI uses.
 
 ```bash
 npm install
