@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import { BOARD_SIZES } from "../shared/characters";
-import type { PublicSettings } from "../shared/types";
+import type { NoteContent, PublicSettings } from "../shared/types";
 import { api } from "./api";
 
 // ---------- routing (hash based, so deep links work on any static host) ----------
@@ -39,6 +39,20 @@ export function useRoute(): Route {
 
 export function navigate(r: Route) {
   location.hash = routeHref(r);
+}
+
+// "Edit a copy": content handed to the next new-note composer that opens.
+let pendingCopy: NoteContent | null = null;
+
+export function editCopy(content: NoteContent) {
+  pendingCopy = content;
+  navigate({ name: "compose" });
+}
+
+export function takePendingCopy(): NoteContent | null {
+  const c = pendingCopy;
+  pendingCopy = null;
+  return c;
 }
 
 // ---------- app-wide state ----------

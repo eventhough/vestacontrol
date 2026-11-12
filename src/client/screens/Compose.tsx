@@ -9,7 +9,8 @@ import { NotePreview } from "../components/NotePreview";
 import { ScheduleDraft, ScheduleEditor, defaultDraft, draftFromSchedule, draftToSchedule } from "../components/ScheduleEditor";
 import { WidgetEditor } from "../components/WidgetEditor";
 import { Field, Segmented, Sheet } from "../components/ui";
-import { errorMessage, navigate, useApp } from "../state";
+import { errorMessage, navigate, takePendingCopy, useApp } from "../state";
+import { TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "../../shared/templates";
 
 type Kind = "text" | "design" | "widget";
 
@@ -49,6 +50,8 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [serverPreview, setServerPreview] = useState<{ layout?: Layout; error?: string; busy?: boolean } | null>(null);
   const [favorites, setFavorites] = useState<Favorite[] | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<TemplateCategory>("celebrate");
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const load = (content: NoteContent) => {
@@ -65,6 +68,14 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     }
     setServerPreview(null);
   };
+
+  // Opened via "Edit a copy" from the Timeline or History.
+  useEffect(() => {
+    if (id) return;
+    const copy = takePendingCopy();
+    if (copy) load(copy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -211,9 +222,14 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     <div className="stack-lg compose">
       <div className="row between">
         <h1>{id ? "Edit note" : "New note"}</h1>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={openFavorites}>
-          ★ Favorites
-        </button>
+        <div className="row">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowTemplates(true)}>
+            🧩 Templates
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={openFavorites}>
+            ★ Favorites
+          </button>
+        </div>
       </div>
 
       <Segmented
@@ -338,6 +354,47 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
           </button>
         )}
       </div>
+
+      {showTemplates && (
+        <Sheet title="🧩 Templates" onClose={() => setShowTemplates(false)}>
+          <div className="stack">
+            <div className="chips">
+              {TEMPLATE_CATEGORIES.map((c) => (
+                <button key={c.id} type="button" className={`chip${templateCategory === c.id ? " chip-selected" : ""}`} onClick={() => setTemplateCategory(c.id)}>
+                  {c.icon} {c.label}
+                </button>
+              ))}
+            </div>
+            <ul className="fav-list">
+              {TEMPLATES.filter((t) => t.category === templateCategory).map((t) => {
+                const content = t.build(settings.boardType);
+                return (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      className="fav-item"
+                      onClick={() => {
+                        load(content);
+                        setShowTemplates(false);
+                        toast(
+                          t.hint
+                            ? `${t.name}: ${t.hint}`
+                            : content.type === "design"
+                              ? `${t.name} loaded. Tap tiles to change it, or use Type mode to change the words.`
+                              : `${t.name} loaded. Make it yours!`,
+                        );
+                      }}
+                    >
+                      <strong>{t.name}</strong>
+                      <NotePreview content={content} board={settings.boardType} boardColor={settings.boardColor} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </Sheet>
+      )}
 
       {favorites && (
         <Sheet title="Favorites" onClose={() => setFavorites(null)}>

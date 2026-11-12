@@ -5,7 +5,7 @@ import type { HistoryEntry } from "../../shared/types";
 import { api } from "../api";
 import { Board } from "../components/Board";
 import { Empty } from "../components/ui";
-import { errorMessage, useApp } from "../state";
+import { editCopy, errorMessage, useApp } from "../state";
 import { dayLabel } from "./Timeline";
 
 export function History() {
@@ -61,9 +61,14 @@ export function History() {
               {e.layout && <Board layout={e.layout} size="sm" color={settings.boardColor} />}
               {e.detail && <span className={e.status === "failed" ? "error small" : "muted small"}>{e.detail}</span>}
               {e.layout && (
-                <button className="btn btn-sm" onClick={() => resend(e)}>
-                  ↺ Send again
-                </button>
+                <div className="row">
+                  <button className="btn btn-sm btn-block" onClick={() => resend(e)}>
+                    ↺ Send again
+                  </button>
+                  <button className="btn btn-sm btn-block" onClick={() => editCopy({ type: "design", layout: normalizeLayout(e.layout!, size.rows, size.cols) })}>
+                    ✏️ Edit a copy
+                  </button>
+                </div>
               )}
             </li>
           ))}

@@ -7,7 +7,9 @@ import { api } from "../api";
 import { Board } from "../components/Board";
 import { NotePreview, contentSummary } from "../components/NotePreview";
 import { Empty, Switch } from "../components/ui";
-import { errorMessage, navigate, useApp } from "../state";
+import { editCopy, errorMessage, navigate, useApp } from "../state";
+import { PinSheet } from "../components/PinSheet";
+import { normalizeLayout } from "../../shared/characters";
 
 export function dayLabel(date: string, tz: string): string {
   const today = utcToLocalDate(Date.now(), tz);
@@ -19,7 +21,8 @@ export function dayLabel(date: string, tz: string): string {
 }
 
 export function Timeline() {
-  const { settings, toast, refreshSettings } = useApp();
+  const { settings, size, toast, refreshSettings } = useApp();
+  const [pinning, setPinning] = useState(false);
   const tz = settings.timezone;
   const [items, setItems] = useState<TimelineItem[] | null>(null);
   const [notes, setNotes] = useState<Record<string, Note>>({});
@@ -72,7 +75,7 @@ export function Timeline() {
   const releaseHold = async () => {
     await api.clearHold();
     await refreshSettings();
-    toast("Repeating notes can run again");
+    toast("Unpinned. Repeating notes can run again");
   };
 
   return (
@@ -91,7 +94,17 @@ export function Timeline() {
             Connect your Vestaboard in <a href="#/settings">Settings</a> to start sending notes.
           </p>
         ) : current.layout ? (
-          <Board layout={current.layout} color={settings.boardColor} />
+          <>
+            <Board layout={current.layout} color={settings.boardColor} />
+            <div className="row">
+              <button className="btn btn-sm btn-block" onClick={() => setPinning(true)}>
+                📌 Pin
+              </button>
+              <button className="btn btn-sm btn-block" onClick={() => editCopy({ type: "design", layout: normalizeLayout(current.layout!, size.rows, size.cols) })}>
+                ✏️ Edit a copy
+              </button>
+            </div>
+          </>
         ) : current.error ? (
           <p className="error">{current.error}</p>
         ) : (
@@ -99,12 +112,13 @@ export function Timeline() {
         )}
         {settings.holdUntil && (
           <div className="banner row between">
-            <span>📌 Protected from repeating notes until {formatTime12(utcToLocalTime(settings.holdUntil, tz))}</span>
+            <span>📌 Pinned until {formatTime12(utcToLocalTime(settings.holdUntil, tz))}. Repeating notes are skipped.</span>
             <button className="btn btn-ghost btn-sm" onClick={releaseHold}>
               Release
             </button>
           </div>
         )}
+        {pinning && <PinSheet onClose={() => setPinning(false)} />}
       </section>
 
       <section className="stack">

@@ -39,6 +39,7 @@ export const api = {
   settings: () => request<PublicSettings>("GET", "/settings"),
   saveSettings: (body: SettingsUpdate) => request<PublicSettings>("PUT", "/settings", body),
   changePassword: (current: string, next: string) => request<{ ok: true }>("POST", "/settings/password", { current, next }),
+  pin: (minutes: number) => request<PublicSettings>("POST", "/hold", { minutes }),
   clearHold: () => request<{ ok: true }>("POST", "/hold/clear"),
   geocode: (q: string) => request<{ results: (Location & { timezone?: string })[] }>("GET", `/geocode?q=${encodeURIComponent(q)}`),
 

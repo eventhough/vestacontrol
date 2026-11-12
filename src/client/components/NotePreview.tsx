@@ -12,7 +12,12 @@ export function localLayout(content: NoteContent, board: BoardType): Layout | nu
 }
 
 export function contentSummary(content: NoteContent): string {
-  if (content.type === "text") return content.text.replace(/\{[a-z0-9]+\}/gi, "■").replace(/\s+/g, " ").trim();
+  if (content.type === "text")
+    return content.text
+      .replace(/\{[a-z0-9]+\}/gi, "■")
+      .replace(/■+/g, "■")
+      .replace(/\s+/g, " ")
+      .trim();
   if (content.type === "design") return "Custom design";
   const w = WIDGETS[content.widget];
   if (content.widget === "countdown" && content.config.label) return `Countdown: ${content.config.label}`;

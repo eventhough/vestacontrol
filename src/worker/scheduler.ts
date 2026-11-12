@@ -33,7 +33,7 @@ export async function runScheduler(env: Env, now = Date.now()): Promise<void> {
     if (late) {
       await finish(env, settings, row, now, once ? "missed" : null, "Skipped: too late (the scheduler was unavailable)");
     } else if (!once && (quiet || held)) {
-      await finish(env, settings, row, now, null, quiet ? "Skipped: quiet hours" : "Skipped: a protected message is on the board");
+      await finish(env, settings, row, now, null, quiet ? "Skipped: quiet hours" : "Skipped: a pinned message is on the board");
     } else if (!sent) {
       await deliver(env, settings, row, now);
       sent = true;
@@ -57,8 +57,8 @@ export async function deliver(env: Env, settings: Settings, row: NoteRow, now = 
     await addHistory(env, { noteId: note.id, title: note.title, layout: rendered.layout, status: "sent", author: note.author });
     const nextState = rendered.state ? JSON.stringify(rendered.state) : row.state;
     await env.DB.prepare("UPDATE notes SET state = ?, last_sent_at = ?, last_error = NULL WHERE id = ?").bind(nextState, now, note.id).run();
-    // A one-time note can protect itself from repeating notes for a while (they're skipped, not delayed).
-    // Repeating notes never protect themselves, even if older data says otherwise.
+    // A one-time note can pin itself so repeating notes are skipped (not delayed) for a while.
+    // Repeating notes never pin themselves, even if older data says otherwise.
     const hold = note.schedule.type === "once" ? note.holdMinutes : 0;
     await saveSettings(env, { holdUntil: hold > 0 ? now + hold * 60_000 : null });
     if (advance) await finish(env, settings, row, now, "sent", null);

@@ -37,7 +37,9 @@ To set up your own copy, follow [Deploy](#deploy-one-time-setup-about-10-minutes
   - ✨ Ask Claude (optional): write any prompt and Claude writes content sized to fit your board
 - **Edit, pause or delete** any note; one-tap **quick ideas** for common repeating notes
 - **Quiet hours**: repeating notes won't flip the board overnight
-- **Protect a message from repeating notes** (for one-time and "send now" messages): so a birthday message isn't replaced 10 minutes later by the hourly weather. Repeating notes that come up meanwhile are skipped, not delayed, and **Release** on the Timeline ends the protection early.
+- **📌 Pin** what's on the board (from the Timeline, or when sending a one-time message) for a set time or until a set time, so a birthday message isn't replaced 10 minutes later by the hourly weather. Repeating notes that come up meanwhile are skipped, not delayed, and **Release** ends the pin early.
+- **🧩 Templates**: about 35 ready-made messages and patterns (birthdays, holidays, reminders, home, rainbow and confetti patterns), sized for your board and editable before sending
+- **✏️ Edit a copy** of what's on the board or anything in History, to tweak and send again
 - **Favorites** for reusing designs and messages
 - **History** of everything sent (or failed or skipped), with "send again"
 - **"From"** name on notes, so everyone knows who left the message
