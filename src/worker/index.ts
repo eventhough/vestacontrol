@@ -132,6 +132,14 @@ app.post("/settings/password", async (c) => {
   return c.json({ ok: true });
 });
 
+// Pin whatever is on the board: repeating notes are skipped until the pin ends.
+app.post("/hold", async (c) => {
+  const { minutes } = await json<{ minutes?: number }>(c.req.raw);
+  if (!Number.isInteger(minutes) || minutes! < 1 || minutes! > 24 * 60) throw new ValidationError("Pin for between 1 minute and 24 hours.");
+  await saveSettings(c.env, { holdUntil: Date.now() + minutes! * 60_000 });
+  return c.json(publicSettings(await getSettings(c.env), c.env));
+});
+
 app.post("/hold/clear", async (c) => {
   await saveSettings(c.env, { holdUntil: null });
   return c.json({ ok: true });
