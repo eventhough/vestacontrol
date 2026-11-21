@@ -132,6 +132,9 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     }
   };
 
+  // "Send now" sends exactly the smart note you previewed, rather than generating a different one.
+  const sendNowContent: NoteContent = kind === "widget" && serverPreview?.layout ? { type: "design", layout: serverPreview.layout } : content;
+
   const validate = (): string | null => {
     if (kind === "text" && !text.trim()) return "Write a message first.";
     if (kind === "design" && layout.every((r) => r.every((c) => c === 0))) return "Your design is empty.";
@@ -149,7 +152,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     setBusy(true);
     try {
       if (draft.mode === "now") {
-        await api.send(content, { author: author || null, title: title || null, holdMinutes: effectiveHold });
+        await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold });
         toast("Sent to your Vestaboard ✨");
         navigate({ name: "timeline" });
         return;
@@ -173,7 +176,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     if (problem) return toast(problem, "error");
     setBusy(true);
     try {
-      await api.send(content, { author: author || null, title: title || null, holdMinutes: effectiveHold });
+      await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold });
       toast("Sent to your Vestaboard ✨");
     } catch (e) {
       toast(errorMessage(e), "error");
@@ -314,7 +317,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
             </button>
             {serverPreview?.layout && <Board layout={serverPreview.layout} color={settings.boardColor} />}
             {serverPreview?.error && <p className="error">{serverPreview.error}</p>}
-            {serverPreview?.layout && <p className="muted small">Smart notes are freshly generated each time they're sent.</p>}
+            {serverPreview?.layout && <p className="muted small">Sending now sends this one. Scheduled and repeating notes get a fresh one each time they run.</p>}
           </div>
         </section>
       )}
