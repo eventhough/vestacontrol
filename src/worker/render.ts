@@ -91,7 +91,7 @@ async function ofTheDay(kind: DailyKind, config: WidgetConfig, ctx: Ctx): Promis
 
   if (config.source === "ai" && ctx.env.ANTHROPIC_API_KEY) {
     try {
-      const generated = await generateBoardText(ctx.env, AI_PROMPTS[kind], ctx.board, recent);
+      const generated = await generateBoardText(ctx.env, AI_PROMPTS[kind], ctx.board, { avoid: recent });
       if (fitsBoard(ctx, generated)) text = generated;
     } catch (e) {
       console.warn(`AI ${kind} failed, falling back to built-in list`, e);
@@ -244,9 +244,9 @@ async function askClaude(config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   if (!prompt) throw new RenderError("Write a prompt for Claude.");
   if (!ctx.env.ANTHROPIC_API_KEY) throw new RenderError("Claude isn't set up. Add the ANTHROPIC_API_KEY secret to enable it.");
   const recent = ctx.state.recent ?? [];
-  let text = await generateBoardText(ctx.env, prompt, ctx.board, recent);
+  let text = await generateBoardText(ctx.env, prompt, ctx.board, { avoid: recent });
   if (!fitsBoard(ctx, text)) {
-    text = await generateBoardText(ctx.env, `${prompt}\n\nKeep it shorter: it must fit ${ctx.rows} lines of ${ctx.cols} characters.`, ctx.board, recent);
+    text = await generateBoardText(ctx.env, prompt, ctx.board, { avoid: [text, ...recent], hint: `Keep it shorter: it must fit ${ctx.rows} lines of ${ctx.cols} characters.` });
   }
   return { layout: fit(ctx, text, 3).layout, text, state: { recent: [text, ...recent].slice(0, 10) } };
 }
