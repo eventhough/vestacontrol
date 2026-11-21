@@ -124,6 +124,42 @@ export function layoutToText(layout: Layout): string {
     .trim();
 }
 
+const COLOR_NAME_BY_CODE = Object.fromEntries(Object.entries(COLOR_CODES).map(([name, code]) => [code, name])) as Record<number, ColorName>;
+
+/**
+ * Turns a design back into an editable message: one line per row (blank rows inside
+ * are kept), color tiles as {red}-style tokens, and the alignment the rows suggest.
+ * Returns null when the design has no letters, numbers or symbols to edit.
+ */
+export function layoutToMessage(layout: Layout, board: BoardType): { text: string; align: "left" | "center" | "right" } | null {
+  if (!layout.some((row) => row.some((c) => c !== BLANK && !isColor(c)))) return null;
+  const cols = Math.max(...layout.map((r) => r.length));
+  const lines: string[] = [];
+  let left = true;
+  let right = true;
+  for (const row of layout) {
+    const first = row.findIndex((c) => c !== BLANK);
+    if (first === -1) {
+      lines.push("");
+      continue;
+    }
+    let last = row.length - 1;
+    while (row[last] === BLANK) last--;
+    if (first !== 0) left = false;
+    if (last !== cols - 1) right = false;
+    lines.push(
+      row
+        .slice(first, last + 1)
+        .map((c) => (c === BLANK ? " " : isColor(c) ? `{${COLOR_NAME_BY_CODE[c]}}` : glyph(c, board)))
+        .join("")
+        .replace(/ {2,}/g, " "),
+    );
+  }
+  while (lines[0] === "") lines.shift();
+  while (lines[lines.length - 1] === "") lines.pop();
+  return { text: lines.join("\n"), align: left ? "left" : right && !left ? "right" : "center" };
+}
+
 export function isLayoutBlank(layout: Layout): boolean {
   return layout.every((row) => row.every((c) => c === BLANK));
 }
