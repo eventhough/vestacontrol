@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Layout } from "../../shared/characters";
 import { formatTime12, utcToLocalDate, utcToLocalTime } from "../../shared/schedule";
-import type { Note, TimelineItem } from "../../shared/types";
+import type { Note, NoteContent, TimelineItem } from "../../shared/types";
 import { WIDGETS } from "../../shared/types";
 import { api } from "../api";
 import { Board } from "../components/Board";
@@ -26,7 +26,7 @@ export function Timeline() {
   const tz = settings.timezone;
   const [items, setItems] = useState<TimelineItem[] | null>(null);
   const [notes, setNotes] = useState<Record<string, Note>>({});
-  const [current, setCurrent] = useState<{ layout?: Layout | null; error?: string; loading?: boolean }>({ loading: true });
+  const [current, setCurrent] = useState<{ layout?: Layout | null; content?: NoteContent | null; error?: string; loading?: boolean }>({ loading: true });
   const [showRepeats, setShowRepeats] = useState(() => {
     try {
       return localStorage.getItem("vc_show_repeats") !== "0";
@@ -39,7 +39,7 @@ export function Timeline() {
     if (!settings.hasApiKey) return setCurrent({});
     setCurrent((c) => ({ ...c, loading: true }));
     try {
-      setCurrent({ layout: (await api.currentBoard()).layout });
+      setCurrent(await api.currentBoard());
     } catch (e) {
       setCurrent({ error: errorMessage(e) });
     }
@@ -100,7 +100,7 @@ export function Timeline() {
               <button className="btn btn-sm btn-block" onClick={() => setPinning(true)}>
                 📌 Pin
               </button>
-              <button className="btn btn-sm btn-block" onClick={() => editCopy({ type: "design", layout: normalizeLayout(current.layout!, size.rows, size.cols) })}>
+              <button className="btn btn-sm btn-block" onClick={() => editCopy(current.content ?? { type: "design", layout: normalizeLayout(current.layout!, size.rows, size.cols) })}>
                 ✏️ Edit a copy
               </button>
             </div>

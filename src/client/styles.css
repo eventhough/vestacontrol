@@ -1094,3 +1094,10 @@ textarea.input {
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+.back-link {
+  align-self: flex-start;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: -12px;
+}

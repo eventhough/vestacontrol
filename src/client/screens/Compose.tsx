@@ -9,7 +9,7 @@ import { NotePreview } from "../components/NotePreview";
 import { ScheduleDraft, ScheduleEditor, defaultDraft, draftFromSchedule, draftToSchedule } from "../components/ScheduleEditor";
 import { WidgetEditor } from "../components/WidgetEditor";
 import { Field, Segmented, Sheet } from "../components/ui";
-import { errorMessage, navigate, takePendingCopy, useApp } from "../state";
+import { errorMessage, goBack, navigate, takePendingCopy, useApp } from "../state";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "../../shared/templates";
 
 type Kind = "text" | "design" | "widget";
@@ -48,7 +48,8 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
   const [title, setTitle] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [serverPreview, setServerPreview] = useState<{ layout?: Layout; error?: string; busy?: boolean } | null>(null);
+  const [serverPreview, setServerPreview] = useState<{ layout?: Layout; text?: string | null; error?: string; busy?: boolean } | null>(null);
+  const [fromCopy, setFromCopy] = useState(false);
   const [favorites, setFavorites] = useState<Favorite[] | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateCategory, setTemplateCategory] = useState<TemplateCategory>("celebrate");
@@ -73,7 +74,10 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
   useEffect(() => {
     if (id) return;
     const copy = takePendingCopy();
-    if (copy) load(copy);
+    if (copy) {
+      load(copy);
+      setFromCopy(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,7 +130,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     setServerPreview({ busy: true });
     try {
       const r = await api.preview(content);
-      setServerPreview({ layout: r.layout });
+      setServerPreview({ layout: r.layout, text: r.text });
     } catch (e) {
       setServerPreview({ error: errorMessage(e) });
     }
@@ -134,6 +138,13 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
 
   // "Send now" sends exactly the smart note you previewed, rather than generating a different one.
   const sendNowContent: NoteContent = kind === "widget" && serverPreview?.layout ? { type: "design", layout: serverPreview.layout } : content;
+  // ...while "Edit a copy" later reopens its words as a message.
+  const sendNowEditable: NoteContent | null =
+    sendNowContent !== content && serverPreview?.text ? { type: "text", text: serverPreview.text, align: "center", abbreviate: widget === "ai" ? 3 : 2 } : null;
+
+  /** Leaves without saving, back to wherever the user came from. */
+  const cancel = () => goBack({ name: draft.mode === "repeat" ? "repeats" : "timeline" });
+  const canCancel = !!id || fromCopy;
 
   const validate = (): string | null => {
     if (kind === "text" && !text.trim()) return "Write a message first.";
@@ -152,7 +163,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     setBusy(true);
     try {
       if (draft.mode === "now") {
-        await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold });
+        await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold, editable: sendNowEditable });
         toast("Sent to your Vestaboard ✨");
         navigate({ name: "timeline" });
         return;
@@ -176,7 +187,7 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
     if (problem) return toast(problem, "error");
     setBusy(true);
     try {
-      await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold });
+      await api.send(sendNowContent, { author: author || null, title: title || null, holdMinutes: effectiveHold, editable: sendNowEditable });
       toast("Sent to your Vestaboard ✨");
     } catch (e) {
       toast(errorMessage(e), "error");
@@ -223,6 +234,11 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
 
   return (
     <div className="stack-lg compose">
+      {canCancel && (
+        <button type="button" className="link-btn back-link" onClick={cancel}>
+          ‹ Cancel
+        </button>
+      )}
       <div className="row between">
         <h1>{id ? "Edit note" : "New note"}</h1>
         <div className="row">
@@ -351,6 +367,11 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
             ☆ Save favorite
           </button>
         </div>
+        {canCancel && (
+          <button type="button" className="btn btn-block" onClick={cancel} disabled={busy}>
+            Cancel
+          </button>
+        )}
         {id && (
           <button type="button" className="btn btn-danger btn-block" onClick={remove}>
             Delete note

@@ -48,6 +48,17 @@ export async function renderContent(env: Env, settings: Settings, content: NoteC
   return renderWidget(content.widget, content.config ?? {}, { env, settings, board, rows, cols, now, state });
 }
 
+/**
+ * What "Edit a copy" should reopen for a sent message: the original words and settings,
+ * a design as-is, or a smart note's generated words as a plain message to tweak.
+ * Null means only the tile picture can be edited.
+ */
+export function editableContent(content: NoteContent, rendered: Rendered): NoteContent | null {
+  if (content.type !== "widget") return content;
+  if (!rendered.text) return null;
+  return { type: "text", text: rendered.text, align: "center", abbreviate: content.widget === "ai" ? 3 : 2 };
+}
+
 function fit(ctx: Ctx, text: string, abbreviate = 2) {
   return formatText(text, { board: ctx.board, rows: ctx.rows, cols: ctx.cols, abbreviate });
 }

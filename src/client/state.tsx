@@ -27,7 +27,8 @@ export function routeHref(r: Route): string {
 export function useRoute(): Route {
   const [route, setRoute] = useState(() => parseHash(location.hash));
   useEffect(() => {
-    const onChange = () => {
+    const onChange = (e: HashChangeEvent) => {
+      previousRoute = parseHash(new URL(e.oldURL).hash);
       setRoute(parseHash(location.hash));
       window.scrollTo(0, 0);
     };
@@ -39,6 +40,13 @@ export function useRoute(): Route {
 
 export function navigate(r: Route) {
   location.hash = routeHref(r);
+}
+
+let previousRoute: Route | null = null;
+
+/** Returns to the screen the user came from (any screen but the composer), or `fallback`. */
+export function goBack(fallback: Route) {
+  navigate(previousRoute && previousRoute.name !== "compose" ? previousRoute : fallback);
 }
 
 // "Edit a copy": content handed to the next new-note composer that opens.

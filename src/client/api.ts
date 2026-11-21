@@ -44,9 +44,9 @@ export const api = {
   geocode: (q: string) => request<{ results: (Location & { timezone?: string })[] }>("GET", `/geocode?q=${encodeURIComponent(q)}`),
 
   testBoard: (apiType: "rw" | "cloud", apiKey?: string) => request<{ ok: true; layout: Layout | null }>("POST", "/board/test", { apiType, apiKey }),
-  currentBoard: () => request<{ layout: Layout | null }>("GET", "/board/current"),
+  currentBoard: () => request<{ layout: Layout | null; content: NoteContent | null }>("GET", "/board/current"),
   preview: (content: NoteContent) => request<{ layout: Layout; text: string | null }>("POST", "/preview", { content }),
-  send: (content: NoteContent, opts: { author?: string | null; title?: string | null; holdMinutes?: number }) =>
+  send: (content: NoteContent, opts: { author?: string | null; title?: string | null; holdMinutes?: number; editable?: NoteContent | null }) =>
     request<{ ok: true; layout: Layout }>("POST", "/send", { content, ...opts }),
 
   notes: () => request<{ notes: Note[] }>("GET", "/notes"),

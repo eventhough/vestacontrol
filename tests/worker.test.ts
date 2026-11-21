@@ -46,3 +46,16 @@ describe("characters", () => {
     expect(layoutToText(note)).toBe("❤");
   });
 });
+
+describe("editableContent", () => {
+  it("reopens messages and designs as they were, and smart notes as their words", async () => {
+    const { editableContent } = await import("../src/worker/render");
+    const text = { type: "text" as const, text: "Hi", align: "left" as const, abbreviate: 0 };
+    expect(editableContent(text, { layout: [[0]], text: "Hi" })).toBe(text);
+    const design = { type: "design" as const, layout: [[63]] };
+    expect(editableContent(design, { layout: [[63]] })).toBe(design);
+    const joke = { type: "widget" as const, widget: "joke" as const, config: {} };
+    expect(editableContent(joke, { layout: [[0]], text: "A JOKE" })).toEqual({ type: "text", text: "A JOKE", align: "center", abbreviate: 2 });
+    expect(editableContent(joke, { layout: [[0]] })).toBeNull();
+  });
+});
