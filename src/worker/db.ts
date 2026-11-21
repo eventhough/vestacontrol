@@ -43,6 +43,29 @@ export async function getSettings(env: Env): Promise<Settings> {
   return s as unknown as Settings;
 }
 
+/**
+ * Small extra values kept in the settings table under their own keys (Claude's past
+ * answers, place in the built-in lists). Never throws: a missing value is null.
+ */
+export async function getStored<T>(env: Env, key: string): Promise<T | null> {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind(key).first<{ value: string }>();
+    return row ? (JSON.parse(row.value) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStored(env: Env, key: string, value: unknown): Promise<void> {
+  try {
+    await env.DB.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .bind(key, JSON.stringify(value))
+      .run();
+  } catch (e) {
+    console.warn(`Could not save ${key}`, e);
+  }
+}
+
 export async function saveSettings(env: Env, patch: Partial<Settings>): Promise<void> {
   const stmts = Object.entries(patch)
     .filter(([k, v]) => k in DEFAULTS && v !== undefined)

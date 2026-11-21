@@ -6,7 +6,7 @@ import { parseDate, utcToLocalDate, zonedParts } from "../shared/schedule";
 import { DAILY_KINDS, type DailyKind, type NoteContent, type WidgetConfig, type WidgetType } from "../shared/types";
 import { AI_PROMPTS, generateBoardText } from "./ai";
 import { FACTS, JOKES, QUESTIONS, QUOTES, WORDS } from "./content";
-import type { Settings } from "./db";
+import { getStored, setStored, type Settings } from "./db";
 import type { Env } from "./env";
 
 export interface WidgetState {
@@ -100,8 +100,14 @@ async function ofTheDay(kind: DailyKind, config: WidgetConfig, ctx: Ctx): Promis
   if (!text) {
     const list = LISTS[kind].filter((t) => fitsBoard(ctx, t));
     if (list.length === 0) throw new RenderError("No built-in content fits this board.");
+    // One shared place in each list for every note, preview and send, so a joke note
+    // and a Smart mix don't both show the same jokes. Falls back to the note's own place.
+    const sharedKey = `listPos:${kind}`;
+    const shared = ctx.env.DB ? await getStored<number>(ctx.env, sharedKey) : null;
+    if (typeof shared === "number") index = shared;
     text = list[index % list.length];
     index = (index + 1) % list.length;
+    if (ctx.env.DB) await setStored(ctx.env, sharedKey, index);
   }
 
   const header = HEADERS[kind];
