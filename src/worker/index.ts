@@ -4,9 +4,9 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { nextRun, runsBetween } from "../shared/schedule";
 import { MIN_PASSWORD_LENGTH, type Note, type TimelineItem } from "../shared/types";
 import { SESSION_COOKIE, SESSION_DAYS, createSessionToken, hashPassword, randomHex, verifyPassword, verifySessionToken } from "./auth";
-import { NoteRow, addHistory, getNoteRow, getSettings, listFavorites, listHistory, publicSettings, rowToNote, saveSettings } from "./db";
+import { NoteRow, addHistory, findSentContent, getNoteRow, getSettings, listFavorites, listHistory, publicSettings, rowToNote, saveSettings } from "./db";
 import type { Env } from "./env";
-import { RenderError, renderContent } from "./render";
+import { RenderError, editableContent, renderContent } from "./render";
 import { clearFailures, clientKey, describeWait, lockedFor, recordFailure } from "./throttle";
 import { deliver, runScheduler } from "./scheduler";
 import { ValidationError, validateContent, validateNoteInput, validateSettings } from "./validate";
@@ -175,8 +175,9 @@ app.post("/board/test", async (c) => {
 
 app.get("/board/current", async (c) => {
   const s = await getSettings(c.env);
-  if (!s.apiKey) return c.json({ layout: null });
-  return c.json({ layout: await readLayout(s.apiType, s.apiKey, c.env.VESTABOARD_API_URL) });
+  if (!s.apiKey) return c.json({ layout: null, content: null });
+  const layout = await readLayout(s.apiType, s.apiKey, c.env.VESTABOARD_API_URL);
+  return c.json({ layout, content: layout ? await findSentContent(c.env, layout) : null });
 });
 
 app.post("/preview", async (c) => {
@@ -189,12 +190,22 @@ app.post("/preview", async (c) => {
 app.post("/send", async (c) => {
   const s = await getSettings(c.env);
   if (!s.apiKey) throw new ValidationError("Connect your Vestaboard in Settings first.");
-  const body = await json<{ content?: unknown; author?: string; title?: string; holdMinutes?: number }>(c.req.raw);
-  const rendered = await renderContent(c.env, s, validateContent(body.content));
+  const body = await json<{ content?: unknown; editable?: unknown; author?: string; title?: string; holdMinutes?: number }>(c.req.raw);
+  const content = validateContent(body.content);
+  // `editable`: what "Edit a copy" should reopen, when what's sent is a snapshot (a previewed smart note, or a resend).
+  const editable = body.editable == null ? null : validateContent(body.editable);
+  const rendered = await renderContent(c.env, s, content);
   await sendLayout(s.apiType, s.apiKey, rendered.layout, c.env.VESTABOARD_API_URL);
   const hold = Number.isInteger(body.holdMinutes) && body.holdMinutes! > 0 ? Math.min(body.holdMinutes!, 1440) : 0;
   await saveSettings(c.env, { holdUntil: hold ? Date.now() + hold * 60_000 : null });
-  await addHistory(c.env, { noteId: null, title: body.title ?? "Sent now", layout: rendered.layout, status: "sent", author: body.author?.slice(0, 40) ?? null });
+  await addHistory(c.env, {
+    noteId: null,
+    title: body.title ?? "Sent now",
+    layout: rendered.layout,
+    status: "sent",
+    author: body.author?.slice(0, 40) ?? null,
+    content: editable ?? editableContent(content, rendered),
+  });
   return c.json({ ok: true, layout: rendered.layout });
 });
 

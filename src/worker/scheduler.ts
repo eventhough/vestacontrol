@@ -5,7 +5,7 @@
 import { inQuietHours, nextRun } from "../shared/schedule";
 import { NoteRow, Settings, addHistory, getSettings, rowToNote, saveSettings } from "./db";
 import type { Env } from "./env";
-import { renderContent, WidgetState } from "./render";
+import { editableContent, renderContent, WidgetState } from "./render";
 import { sendLayout } from "./vestaboard";
 
 /** How late a note may go out before we give up on it (e.g. after an outage). */
@@ -54,7 +54,14 @@ export async function deliver(env: Env, settings: Settings, row: NoteRow, now = 
     const rendered = await renderContent(env, settings, note.content, state, now);
     await sendLayout(settings.apiType, settings.apiKey, rendered.layout, env.VESTABOARD_API_URL);
 
-    await addHistory(env, { noteId: note.id, title: note.title, layout: rendered.layout, status: "sent", author: note.author });
+    await addHistory(env, {
+      noteId: note.id,
+      title: note.title,
+      layout: rendered.layout,
+      status: "sent",
+      author: note.author,
+      content: editableContent(note.content, rendered),
+    });
     const nextState = rendered.state ? JSON.stringify(rendered.state) : row.state;
     await env.DB.prepare("UPDATE notes SET state = ?, last_sent_at = ?, last_error = NULL WHERE id = ?").bind(nextState, now, note.id).run();
     // A one-time note can pin itself so repeating notes are skipped (not delayed) for a while.

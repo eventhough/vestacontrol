@@ -23,7 +23,10 @@ export function History() {
   const resend = async (e: HistoryEntry) => {
     if (!e.layout) return;
     try {
-      await api.send({ type: "design", layout: normalizeLayout(e.layout, size.rows, size.cols) }, { author: author || null, title: e.title ? `Resent: ${e.title}` : "Resent" });
+      await api.send(
+        { type: "design", layout: normalizeLayout(e.layout, size.rows, size.cols) },
+        { author: author || null, title: e.title ? `Resent: ${e.title}` : "Resent", editable: e.content },
+      );
       toast("Sent again ✨");
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -65,7 +68,7 @@ export function History() {
                   <button className="btn btn-sm btn-block" onClick={() => resend(e)}>
                     ↺ Send again
                   </button>
-                  <button className="btn btn-sm btn-block" onClick={() => editCopy({ type: "design", layout: normalizeLayout(e.layout!, size.rows, size.cols) })}>
+                  <button className="btn btn-sm btn-block" onClick={() => editCopy(e.content ?? { type: "design", layout: normalizeLayout(e.layout!, size.rows, size.cols) })}>
                     ✏️ Edit a copy
                   </button>
                 </div>

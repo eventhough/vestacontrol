@@ -110,6 +110,8 @@ export interface HistoryEntry {
   status: "sent" | "failed" | "skipped";
   detail: string | null;
   author: string | null;
+  /** The editable version of what was sent; null for older entries and failures. */
+  content: NoteContent | null;
   createdAt: number;
 }
 

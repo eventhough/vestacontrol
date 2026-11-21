@@ -43,6 +43,29 @@ export async function getSettings(env: Env): Promise<Settings> {
   return s as unknown as Settings;
 }
 
+/**
+ * Small extra values kept in the settings table under their own keys (Claude's past
+ * answers, place in the built-in lists). Never throws: a missing value is null.
+ */
+export async function getStored<T>(env: Env, key: string): Promise<T | null> {
+  try {
+    const row = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind(key).first<{ value: string }>();
+    return row ? (JSON.parse(row.value) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStored(env: Env, key: string, value: unknown): Promise<void> {
+  try {
+    await env.DB.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .bind(key, JSON.stringify(value))
+      .run();
+  } catch (e) {
+    console.warn(`Could not save ${key}`, e);
+  }
+}
+
 export async function saveSettings(env: Env, patch: Partial<Settings>): Promise<void> {
   const stmts = Object.entries(patch)
     .filter(([k, v]) => k in DEFAULTS && v !== undefined)
@@ -117,16 +140,25 @@ export async function getNoteRow(env: Env, id: string): Promise<NoteRow | null> 
 
 export async function addHistory(
   env: Env,
-  entry: { noteId: string | null; title: string | null; layout: Layout | null; status: HistoryEntry["status"]; detail?: string | null; author?: string | null },
+  entry: {
+    noteId: string | null;
+    title: string | null;
+    layout: Layout | null;
+    status: HistoryEntry["status"];
+    detail?: string | null;
+    author?: string | null;
+    content?: NoteContent | null;
+  },
 ): Promise<void> {
   await env.DB.batch([
-    env.DB.prepare("INSERT INTO history (note_id, title, layout, status, detail, author, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(
+    env.DB.prepare("INSERT INTO history (note_id, title, layout, status, detail, author, content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(
       entry.noteId,
       entry.title,
       entry.layout ? JSON.stringify(entry.layout) : null,
       entry.status,
       entry.detail ?? null,
       entry.author ?? null,
+      entry.content ? JSON.stringify(entry.content) : null,
       Date.now(),
     ),
     // Keep the table small.
@@ -143,6 +175,7 @@ export async function listHistory(env: Env, limit: number): Promise<HistoryEntry
     status: HistoryEntry["status"];
     detail: string | null;
     author: string | null;
+    content: string | null;
     created_at: number;
   }>();
   return results.map((r) => ({
@@ -153,6 +186,7 @@ export async function listHistory(env: Env, limit: number): Promise<HistoryEntry
     status: r.status,
     detail: r.detail,
     author: r.author,
+    content: parseContent(r.content),
     createdAt: r.created_at,
   }));
 }
@@ -167,4 +201,21 @@ export async function listFavorites(env: Env): Promise<Favorite[]> {
     created_at: number;
   }>();
   return results.map((r) => ({ id: r.id, name: r.name, content: JSON.parse(r.content) as NoteContent, createdAt: r.created_at }));
+}
+
+function parseContent(json: string | null | undefined): NoteContent | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as NoteContent;
+  } catch {
+    return null;
+  }
+}
+
+/** The editable version of the most recent send that put exactly this layout on the board, if we know it. */
+export async function findSentContent(env: Env, layout: Layout): Promise<NoteContent | null> {
+  const row = await env.DB.prepare("SELECT content FROM history WHERE status = 'sent' AND layout = ? AND content IS NOT NULL ORDER BY id DESC LIMIT 1")
+    .bind(JSON.stringify(layout))
+    .first<{ content: string }>();
+  return parseContent(row?.content);
 }
