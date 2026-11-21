@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { COLOR_HEX, Layout, SYMBOL_62, emptyLayout, glyph, normalizeLayout } from "../../shared/characters";
+import { COLOR_HEX, Layout, SYMBOL_62, emptyLayout, glyph, layoutToMessage, normalizeLayout } from "../../shared/characters";
 import { Align, formatText } from "../../shared/formatter";
 import type { Favorite, NoteContent, NoteInput, WidgetConfig, WidgetType } from "../../shared/types";
 import { api } from "../api";
@@ -254,6 +254,16 @@ export function Compose({ id, repeat }: { id?: string; repeat?: boolean }) {
       <Segmented
         value={kind}
         onChange={(k) => {
+          // Going from a design to a message: start from the design's words, so they can be edited.
+          if (k === "text" && kind === "design" && !text.trim()) {
+            const message = layoutToMessage(layout, settings.boardType);
+            if (message) {
+              setText(message.text);
+              setAlign(message.align);
+              setAbbreviate(0);
+              toast("Loaded the design's words. Colors and spacing may shift a little; tap Design to keep the original.");
+            }
+          }
           setKind(k);
           setServerPreview(null);
         }}

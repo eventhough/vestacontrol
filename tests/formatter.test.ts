@@ -108,3 +108,25 @@ describe("only keeps shortening that's needed", () => {
     expect(r.abbreviations.map((a) => a.from).sort()).toEqual(["AFTERNOON", "APPOINTMENT"]);
   });
 });
+
+describe("layoutToMessage", () => {
+  it("turns a design back into an editable message that renders the same", async () => {
+    const { layoutToMessage } = await import("../src/shared/characters");
+    const opts = { board: "note" as const, rows: 3, cols: 15, abbreviate: 0 };
+    const design = formatText("WELCOME JORDAN\nDAPHNE PENELOPE\nSPENCER ❤", opts).layout;
+    const message = layoutToMessage(design, "note")!;
+    expect(message).toEqual({ text: "WELCOME JORDAN\nDAPHNE PENELOPE\nSPENCER ❤", align: "center" });
+    expect(formatText(message.text, { ...opts, align: message.align }).layout).toEqual(design);
+  });
+
+  it("keeps colors as tokens and spots left alignment", async () => {
+    const { layoutToMessage } = await import("../src/shared/characters");
+    const design = formatText("{red} HI\nTHERE", { board: "flagship", rows: 6, cols: 22, align: "left" }).layout;
+    expect(layoutToMessage(design, "flagship")).toEqual({ text: "{red} HI\nTHERE", align: "left" });
+  });
+
+  it("leaves pure color patterns alone", async () => {
+    const { layoutToMessage } = await import("../src/shared/characters");
+    expect(layoutToMessage([[63, 64], [65, 0]], "note")).toBeNull();
+  });
+});
