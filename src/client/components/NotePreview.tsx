@@ -20,6 +20,7 @@ export function contentSummary(content: NoteContent): string {
       .trim();
   if (content.type === "design") return "Custom design";
   const w = WIDGETS[content.widget];
+  if (content.widget === "weather" && content.config.day === "tomorrow") return "Tomorrow's weather";
   if (content.widget === "countdown" && content.config.label) return `Countdown: ${content.config.label}`;
   if (content.widget === "ai" && content.config.prompt) return `Claude: ${content.config.prompt}`;
   if (content.widget === "mix") {

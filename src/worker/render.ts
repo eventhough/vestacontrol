@@ -70,7 +70,7 @@ function fitsBoard(ctx: Ctx, text: string): boolean {
 async function renderWidget(widget: WidgetType, config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   switch (widget) {
     case "weather":
-      return weather(ctx);
+      return weather(config, ctx);
     case "quote":
     case "question":
     case "joke":
@@ -158,7 +158,7 @@ function describeWeather(code: number): { label: string; color: string } {
   return hit ? { label: hit[1], color: hit[2] } : { label: "", color: "white" };
 }
 
-interface Forecast {
+export interface Forecast {
   current: { temperature_2m: number; weather_code: number };
   daily: {
     temperature_2m_max: number[];
@@ -168,7 +168,7 @@ interface Forecast {
   };
 }
 
-async function weather(ctx: Ctx): Promise<Rendered> {
+async function weather(config: WidgetConfig, ctx: Ctx): Promise<Rendered> {
   const loc = ctx.settings.location;
   if (!loc) throw new RenderError("Set your location in Settings to use the weather forecast.");
   const params = new URLSearchParams({
@@ -183,28 +183,42 @@ async function weather(ctx: Ctx): Promise<Rendered> {
   const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
   if (!res.ok) throw new RenderError(`Weather service returned ${res.status}`);
   const f = (await res.json()) as Forecast;
+  const text = weatherText(f, config.day === "tomorrow" ? "tomorrow" : "today", loc.name.split(",")[0], ctx);
+  return { layout: fit(ctx, text, 1).layout, text };
+}
+
+/** The board text for a forecast. Exported for tests. */
+export function weatherText(f: Forecast, day: "today" | "tomorrow", place: string, ctx: Pick<Ctx, "board" | "rows" | "cols">): string {
+  // The Note has no degree sign (its code 62 is a heart), so temperatures are bare numbers there.
+  const deg = ctx.board === "flagship" ? "°" : "";
+  const i = day === "tomorrow" ? 1 : 0;
+  const hi = Math.round(f.daily.temperature_2m_max[i]);
+  const lo = Math.round(f.daily.temperature_2m_min[i]);
+  const rain = f.daily.precipitation_probability_max[i] ?? 0;
+  const big = ctx.rows >= 6;
+
+  if (day === "tomorrow") {
+    const w = describeWeather(f.daily.weather_code[1]);
+    const when = big ? "TOMORROW" : "TMRW";
+    // Drop the color tile if it would push a long condition (PT CLOUDY) onto a second row.
+    const withColor = `{${w.color}} ${when} ${w.label}`.trim();
+    const first = 2 + when.length + 1 + w.label.length <= ctx.cols ? withColor : `${when} ${w.label}`.trim();
+    return [...(big ? [place] : []), first, `HI ${hi}${deg} LO ${lo}${deg}`, `RAIN ${rain}%`].join("\n");
+  }
 
   const now = describeWeather(f.current.weather_code);
   const t = Math.round(f.current.temperature_2m);
-  const hi = Math.round(f.daily.temperature_2m_max[0]);
-  const lo = Math.round(f.daily.temperature_2m_min[0]);
-  const rain = f.daily.precipitation_probability_max[0] ?? 0;
   const tmrw = describeWeather(f.daily.weather_code[1]);
-  // The Note has no degree sign (its code 62 is a heart), so temperatures are bare numbers there.
-  const deg = ctx.board === "flagship" ? "°" : "";
-
-  const lines =
-    ctx.rows >= 6
-      ? [
-          loc.name.split(",")[0],
-          `{${now.color}} NOW ${t}${deg} ${now.label}`,
-          `HI ${hi}${deg} LO ${lo}${deg}`,
-          `RAIN ${rain}%`,
-          `TMRW ${Math.round(f.daily.temperature_2m_max[1])}${deg}/${Math.round(f.daily.temperature_2m_min[1])}${deg} ${tmrw.label}`,
-        ]
-      : [`{${now.color}} ${t}${deg} ${now.label}`, `HI ${hi}${deg} LO ${lo}${deg}`, `RAIN ${rain}%`];
-  const text = lines.join("\n");
-  return { layout: fit(ctx, text, 1).layout, text };
+  const lines = big
+    ? [
+        place,
+        `{${now.color}} NOW ${t}${deg} ${now.label}`,
+        `HI ${hi}${deg} LO ${lo}${deg}`,
+        `RAIN ${rain}%`,
+        `TMRW ${Math.round(f.daily.temperature_2m_max[1])}${deg}/${Math.round(f.daily.temperature_2m_min[1])}${deg} ${tmrw.label}`,
+      ]
+    : [`{${now.color}} ${t}${deg} ${now.label}`, `HI ${hi}${deg} LO ${lo}${deg}`, `RAIN ${rain}%`];
+  return lines.join("\n");
 }
 
 // ---------- countdown ----------
