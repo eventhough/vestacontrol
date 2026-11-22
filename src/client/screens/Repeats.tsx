@@ -15,6 +15,15 @@ const IDEAS: { label: string; input: NoteInput; needs?: "location" | "ai" }[] = 
     input: { title: "Morning weather", content: { type: "widget", widget: "weather", config: {} }, schedule: { type: "recurring", days: [], times: ["07:00"] } },
   },
   {
+    label: "Tomorrow's weather every evening at 8",
+    needs: "location",
+    input: {
+      title: "Tomorrow's weather",
+      content: { type: "widget", widget: "weather", config: { day: "tomorrow" } },
+      schedule: { type: "recurring", days: [], times: ["20:00"] },
+    },
+  },
+  {
     label: "Quote of the day at 8",
     input: { title: "Quote of the day", content: { type: "widget", widget: "quote", config: {} }, schedule: { type: "recurring", days: [], times: ["08:00"] } },
   },

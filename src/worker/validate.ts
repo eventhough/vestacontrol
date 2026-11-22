@@ -48,6 +48,7 @@ export function validateContent(c: unknown): NoteContent {
           yearly: !!cfg.yearly,
           messages: cfg.messages,
           prompt: cfg.prompt,
+          day: cfg.day === "tomorrow" ? "tomorrow" : undefined,
           kinds: cfg.kinds ? DAILY_KINDS.filter((k) => cfg.kinds!.includes(k)) : undefined,
         },
       };

@@ -19,6 +19,8 @@ export interface WidgetConfig {
   yearly?: boolean;
   /** rotation */
   messages?: string[];
+  /** weather: whose forecast to show. Missing means today. */
+  day?: "today" | "tomorrow";
   /** mix: which daily types to take turns between. Missing means all of them. */
   kinds?: DailyKind[];
   /** ai */
@@ -123,7 +125,7 @@ export interface Favorite {
 }
 
 export const WIDGETS: Record<WidgetType, { label: string; icon: string; description: string }> = {
-  weather: { label: "Weather forecast", icon: "🌤️", description: "Today's conditions, high and low, and chance of rain." },
+  weather: { label: "Weather forecast", icon: "🌤️", description: "Today's or tomorrow's conditions, high and low, and chance of rain." },
   quote: { label: "Quote of the day", icon: "💬", description: "A short, inspiring quote." },
   question: { label: "Question of the day", icon: "❓", description: "A conversation starter for the family." },
   joke: { label: "Joke of the day", icon: "😄", description: "A groan-worthy one-liner." },

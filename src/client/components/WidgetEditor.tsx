@@ -60,6 +60,18 @@ export function WidgetEditor({
           Set your location in <a href="#/settings">Settings</a> first.
         </p>
       )}
+      {widget === "weather" && (
+        <Field label="Forecast for">
+          <Segmented
+            value={config.day ?? "today"}
+            onChange={(day) => set({ day: day === "tomorrow" ? "tomorrow" : undefined })}
+            options={[
+              { value: "today", label: "Today" },
+              { value: "tomorrow", label: "Tomorrow" },
+            ]}
+          />
+        </Field>
+      )}
       {widget === "weather" && settings.location && <p className="muted small">📍 {settings.location.name}</p>}
 
       {widget === "countdown" && (
